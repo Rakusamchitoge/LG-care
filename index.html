@@ -1,2173 +1,1579 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gecko Care Tracker - Chăm sóc Leopard Gecko</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Gecko Care Tracker</title>
+
+  <!-- Khai báo chạy độc lập toàn màn hình cho iOS & Android -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Gecko Care">
+  <meta name="theme-color" content="#EA580C">
+
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link id="appleTouchIcon" rel="apple-touch-icon" sizes="180x180">
+
+  <!-- Tự động vẽ icon PNG 180x180 cho màn hình chính iPhone -->
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              50: '#FFF7ED',
-              100: '#FFEDD5',
-              200: '#FED7AA',
-              500: '#F97316',
-              600: '#EA580C',
-              700: '#C2410C',
-            }
-          }
-        }
-      }
-    };
+    (function () {
+      try {
+        const c = document.createElement('canvas');
+        c.width = 180;
+        c.height = 180;
+        const ctx = c.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 180, 180);
+        grad.addColorStop(0, '#FB923C');
+        grad.addColorStop(1, '#C2410C');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 180, 180);
+
+        ctx.fillStyle = '#FFFFFF';
+        // Đầu
+        ctx.beginPath();
+        ctx.ellipse(90, 48, 16, 19, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Thân
+        ctx.beginPath();
+        ctx.ellipse(90, 88, 17, 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Đuôi
+        ctx.beginPath();
+        ctx.moveTo(90, 114);
+        ctx.bezierCurveTo(90, 136, 116, 140, 111, 155);
+        ctx.bezierCurveTo(108, 164, 94, 162, 97, 152);
+        ctx.bezierCurveTo(99, 144, 82, 139, 83, 114);
+        ctx.fill();
+        // Chân
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 7;
+        ctx.lineCap = 'round';
+        [[75, 72, 52, 76], [105, 72, 128, 76], [76, 102, 53, 118], [104, 102, 127, 118]].forEach(([x1, y1, x2, y2]) => {
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        });
+        // Mắt
+        ctx.fillStyle = '#9A3412';
+        ctx.beginPath();
+        ctx.arc(83, 44, 2.5, 0, Math.PI * 2);
+        ctx.arc(97, 44, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        document.getElementById('appleTouchIcon').href = c.toDataURL('image/png');
+      } catch (e) {}
+    })();
   </script>
+
   <style>
-    /* Ẩn thanh cuộn ngang cho danh sách pill tabs trên mobile */
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
+    :root {
+      --bg: #F8FAFC;
+      --card: #FFFFFF;
+      --text: #0F172A;
+      --muted: #64748B;
+      --border: #E2E8F0;
+      --primary: #EA580C;
+      --primary-dark: #C2410C;
+      --primary-soft: #FFF7ED;
+      --green: #16A34A;
+      --green-soft: #F0FDF4;
+      --blue: #0284C7;
+      --blue-soft: #F0F9FF;
+      --red: #DC2626;
+      --red-soft: #FEF2F2;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
-    .no-scrollbar {
-      -ms-overflow-style: none;
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: calc(76px + var(--safe-bottom));
+    }
+
+    /* Top App Bar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: calc(10px + var(--safe-top)) 16px 10px;
+    }
+    .topbar-row {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 17px;
+      color: var(--text);
+    }
+    .brand-badge {
+      background: var(--primary);
+      color: #fff;
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+    }
+    .btn-add-pet {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border: 1px solid #FDBA74;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    /* Pet Switcher Pills */
+    .pet-bar {
+      max-width: 680px;
+      margin: 8px auto 0;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
       scrollbar-width: none;
     }
-    html, body {
-      overflow-x: hidden;
-      background-color: #F1F5F9;
-      -webkit-tap-highlight-color: transparent;
+    .pet-bar::-webkit-scrollbar { display: none; }
+    .pet-pill {
+      flex-shrink: 0;
+      padding: 6px 13px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #F1F5F9;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
     }
-    .fade-in {
-      animation: fadeIn 0.2s ease-out;
+    .pet-pill.active {
+      background: var(--text);
+      color: #FFFFFF;
+      border-color: var(--text);
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
+
+    /* Main Container */
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 14px 14px 20px;
     }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 15px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Empty State */
+    .empty-box {
+      text-align: center;
+      padding: 36px 18px;
+    }
+    .empty-icon { font-size: 46px; margin-bottom: 10px; }
+    .empty-box h2 { margin: 0 0 6px; font-size: 18px; }
+    .empty-box p { margin: 0 0 18px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+    /* Profile Header */
+    .pet-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .pet-name { font-size: 20px; font-weight: 800; margin: 0; }
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-top: 5px;
+      margin-right: 4px;
+    }
+    .tag-morph { background: var(--primary-soft); color: var(--primary-dark); }
+    .tag-gender { background: var(--blue-soft); color: var(--blue); }
+    .pet-meta {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .pet-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Schedule Card */
+    .sched-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .sched-time {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 4px 0;
+    }
+    .sched-time span { color: var(--primary); }
+    .status-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .st-due { background: var(--primary-soft); color: var(--primary-dark); }
+    .st-late { background: var(--red-soft); color: var(--red); }
+    .st-ok { background: var(--green-soft); color: var(--green); }
+    .st-none { background: #F1F5F9; color: var(--muted); }
+
+    .btn-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .hint-box {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #F8FAFC;
+      border: 1px dashed #CBD5E1;
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .kpi {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .kpi-lbl { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .kpi-val { font-size: 19px; font-weight: 800; margin: 4px 0 2px; }
+    .kpi-sub { font-size: 12px; color: var(--muted); }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-primary { background: var(--primary); color: #FFFFFF; }
+    .btn-primary:active { background: var(--primary-dark); }
+    .btn-secondary { background: #F1F5F9; color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: var(--red-soft); color: var(--red); }
+    .btn-sm { padding: 7px 11px; font-size: 12px; border-radius: 9px; width: auto; }
+
+    /* Forms */
+    .form-group { margin-bottom: 12px; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #CBD5E1;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #FFFFFF;
+      color: var(--text);
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* Multi-feeder rows */
+    .feeder-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 8px;
+      background: #F8FAFC;
+      padding: 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .qty-box {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .qty-btn {
+      width: 32px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid #CBD5E1;
+      background: #FFFFFF;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .qty-input {
+      width: 46px;
+      text-align: center;
+      padding: 7px 4px;
+      font-weight: 700;
+    }
+    .btn-del-row {
+      background: none;
+      border: none;
+      color: var(--red);
+      font-size: 16px;
+      padding: 4px 6px;
+      cursor: pointer;
+    }
+
+    /* Supplement Chips */
+    .chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      padding: 8px 13px;
+      border-radius: 999px;
+      border: 1px solid #CBD5E1;
+      background: #FFFFFF;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+    }
+    .chip.selected {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary-dark);
+    }
+
+    /* History Logs */
+    .log-item {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-date { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .log-main { font-size: 14px; font-weight: 700; margin: 3px 0; }
+    .log-sub { font-size: 12px; color: #475569; line-height: 1.45; }
+
+    /* Chart */
+    .chart-wrap {
+      width: 100%;
+      overflow: hidden;
+      background: #F8FAFC;
+      border-radius: 12px;
+      padding: 8px;
+      border: 1px solid var(--border);
+    }
+    .chart-tip {
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary-dark);
+      min-height: 18px;
+      text-align: center;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 30;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 6px 4px calc(6px + var(--safe-bottom));
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px 0;
+    }
+    .nav-btn.active { color: var(--primary); font-weight: 700; }
+    .nav-ico { font-size: 18px; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      z-index: 50;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-sheet {
+      background: #FFFFFF;
+      width: 100%;
+      max-width: 540px;
+      border-radius: 20px 20px 0 0;
+      padding: 18px 16px calc(20px + var(--safe-bottom));
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    @media (min-width: 600px) {
+      .modal-backdrop { align-items: center; }
+      .modal-sheet { border-radius: 18px; padding-bottom: 20px; }
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: calc(14px + var(--safe-top));
+      left: 50%;
+      transform: translateX(-50%) translateY(-120%);
+      background: #0F172A;
+      color: #FFFFFF;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 60;
+      max-width: 92vw;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+      transition: transform 0.25s ease;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.err { background: var(--red); }
+    .toast.ok { background: var(--green); }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans antialiased pb-24 md:pb-12">
+<body>
 
-  <!-- ==================== STICKY HEADER ==================== -->
-  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200/90">
-    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <div class="w-10 h-10 rounded-2xl bg-brand-600 text-white flex items-center justify-center text-xl shadow-xs shrink-0">
-          🦎
-        </div>
-        <div class="min-w-0">
-          <h1 class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight truncate">
-            Gecko Care Tracker
-          </h1>
-          <p class="text-xs text-slate-500 truncate">Chăm sóc Leopard Gecko</p>
-        </div>
-      </div>
+  <div id="toast" class="toast"></div>
 
-      <div class="flex items-center gap-2 shrink-0">
-        <button
-          type="button"
-          onclick="openProfileModal(false)"
-          class="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white text-xs sm:text-sm font-bold shadow-xs transition"
-        >
-          <span>+ Thêm bé</span>
-        </button>
+  <!-- Header -->
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="brand">
+        <div class="brand-badge">🦎</div>
+        <span>Gecko Care</span>
       </div>
+      <button class="btn-add-pet" onclick="openPetModal(false)">+ Thêm bé</button>
     </div>
-
-    <!-- Thanh chuyển đổi nhanh các bé (Horizontal Scrollable Pill Tabs) -->
-    <div id="gecko-tabs-bar" class="hidden max-w-4xl mx-auto px-4 pb-3">
-      <div id="gecko-pill-list" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-        <!-- Render bằng JS -->
-      </div>
-    </div>
+    <div id="petBar" class="pet-bar"></div>
   </header>
 
-  <!-- ==================== MAIN CONTENT ==================== -->
-  <main class="max-w-4xl mx-auto px-4 pt-4">
+  <main class="container">
+    <!-- Màn hình trống khi chưa có dữ liệu -->
+    <div id="emptyState" class="card empty-box" style="display:none;">
+      <div class="empty-icon">🦎</div>
+      <h2>Chưa có hồ sơ bé Gecko nào</h2>
+      <p>Tạo hồ sơ đầu tiên để bắt đầu theo dõi khẩu phần ăn, giờ nhắc ăn, cân nặng và tình trạng phân hằng ngày.</p>
+      <button class="btn btn-primary" onclick="openPetModal(false)" style="margin-bottom:10px;">+ Tạo hồ sơ bé Gecko đầu tiên</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 Nhập dữ liệu sao lưu (JSON)</button>
+    </div>
 
-    <!-- 1. EMPTY STATE (HIỂN THỊ KHI CHƯA CÓ BÉ NÀO) -->
-    <section id="empty-state-view" class="hidden fade-in">
-      <div class="bg-white rounded-2xl p-6 sm:p-10 border border-slate-200 shadow-xs text-center max-w-xl mx-auto mt-4 space-y-5">
-        <div class="w-20 h-20 rounded-3xl bg-brand-50 border border-brand-100 text-4xl flex items-center justify-center mx-auto">
-          🦎
+    <!-- Khu vực nội dung khi đã có hồ sơ -->
+    <div id="appContent" style="display:none;">
+
+      <!-- TAB 1: TỔNG QUAN -->
+      <section id="tab-overview" class="tab-pane active">
+        <div class="card">
+          <div class="pet-head">
+            <div>
+              <h1 id="ovName" class="pet-name">-</h1>
+              <div>
+                <span id="ovMorph" class="tag tag-morph">-</span>
+                <span id="ovGender" class="tag tag-gender">-</span>
+              </div>
+            </div>
+          </div>
+          <div id="ovMeta" class="pet-meta"></div>
+          <div class="pet-actions">
+            <button class="btn btn-secondary btn-sm" onclick="openPetModal(true)">✏️ Sửa hồ sơ</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCurrentPet()">🗑️ Xóa bé</button>
+          </div>
         </div>
-        <div class="space-y-2">
-          <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">
-            Chào mừng đến với Gecko Care Tracker
-          </h2>
-          <p class="text-sm text-slate-500 leading-relaxed">
-            Ứng dụng đang trống dữ liệu. Hãy tạo hồ sơ đầu tiên cho bé Leopard Gecko của bạn để bắt đầu theo dõi lịch cho ăn, bổ sung khoáng, cân nặng và tình trạng sức khỏe hằng ngày.
-          </p>
+
+        <!-- Lịch cho ăn & Thông báo -->
+        <div class="card">
+          <div class="sched-label">LỊCH CHO ĂN TIẾP THEO</div>
+          <div id="schedDateTime" class="sched-time">--/--/---- • <span>19:00</span></div>
+          <div id="schedSub" style="font-size:13px; color:var(--muted);">Chưa có bữa ăn nào được ghi nhận</div>
+          <div><span id="schedBadge" class="status-pill st-none">Chưa có bữa ăn</span></div>
+
+          <div style="margin-top:14px;">
+            <button id="btnNotifToggle" class="btn btn-primary" onclick="toggleNotifications()">🔔 Bật thông báo giờ cho ăn</button>
+          </div>
+          <div class="btn-row-2">
+            <button class="btn btn-secondary" onclick="sendTestNotification()">Thử thông báo</button>
+            <button class="btn btn-secondary" onclick="downloadICS()">📅 Thêm vào Lịch (.ics)</button>
+          </div>
+          <div id="iosHint" class="hint-box"></div>
         </div>
 
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2">
-          <button
-            type="button"
-            onclick="openProfileModal(false)"
-            class="min-h-[48px] px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold text-sm shadow-xs transition"
-          >
-            + Thêm hồ sơ bé Gecko đầu tiên
-          </button>
-
-          <label
-            for="empty-import-json-input"
-            class="min-h-[48px] px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition"
-          >
-            <span>⬆️ Nhập dữ liệu JSON</span>
-            <input
-              type="file"
-              id="empty-import-json-input"
-              accept=".json,application/json"
-              onchange="handleImportJSON(event)"
-              class="hidden"
-            />
-          </label>
+        <!-- KPIs -->
+        <div class="kpi-grid">
+          <div class="kpi">
+            <div class="kpi-lbl">Cân nặng hiện tại</div>
+            <div id="kpiWeight" class="kpi-val" style="color:var(--primary);">-- g</div>
+            <div id="kpiWeightSub" class="kpi-sub">Chưa nhập số cân</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lbl">Tổng mồi 7 ngày qua</div>
+            <div id="kpiFood" class="kpi-val" style="color:var(--green);">0 con</div>
+            <div id="kpiFoodSub" class="kpi-sub">Trong 0 bữa ăn</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lbl">Đi phân gần nhất</div>
+            <div id="kpiPoop" class="kpi-val" style="font-size:15px;">Chưa có</div>
+            <div id="kpiPoopSub" class="kpi-sub">Đang theo dõi</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lbl">Thể trạng & Lột xác</div>
+            <div id="kpiStatus" class="kpi-val" style="font-size:15px;">Bình thường</div>
+            <div id="kpiStatusSub" class="kpi-sub">Chưa có nhật ký</div>
+          </div>
         </div>
-      </div>
-    </section>
 
-    <!-- 2. DASHBOARD KHI ĐÃ CÓ HỒ SƠ BÉ -->
-    <div id="dashboard-view" class="hidden space-y-4">
-
-      <!-- Card Thông tin hồ sơ bé đang chọn -->
-      <section id="active-profile-card" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-        <!-- Render bằng JS -->
+        <!-- Nhật ký gần đây -->
+        <div class="card">
+          <div class="card-title">
+            <span>📋 Nhật ký gần đây</span>
+            <button class="btn btn-primary btn-sm" onclick="switchTab('log')">+ Ghi mới</button>
+          </div>
+          <div id="recentLogs"></div>
+        </div>
       </section>
 
-      <!-- Điều hướng Tab trên Desktop / Tablet -->
-      <nav class="hidden md:grid grid-cols-4 gap-2 bg-slate-200/80 p-1.5 rounded-2xl">
-        <button type="button" data-tab="overview" onclick="switchTab('overview')" class="nav-btn-desktop min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition">
-          📊 Tổng quan & Lịch
-        </button>
-        <button type="button" data-tab="log" onclick="switchTab('log')" class="nav-btn-desktop min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition">
-          📝 Ghi nhật ký
-        </button>
-        <button type="button" data-tab="weight" onclick="switchTab('weight')" class="nav-btn-desktop min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition">
-          📈 Biểu đồ cân nặng
-        </button>
-        <button type="button" data-tab="backup" onclick="switchTab('backup')" class="nav-btn-desktop min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition">
-          💾 Sao lưu dữ liệu
-        </button>
-      </nav>
+      <!-- TAB 2: GHI NHẬT KÝ -->
+      <section id="tab-log" class="tab-pane">
+        <div class="card">
+          <div class="card-title">📝 Ghi nhận bữa ăn & thể trạng</div>
 
-      <!-- ==================== TAB 1: TỔNG QUAN, LỊCH NHẮC & LỊCH SỬ ==================== -->
-      <div id="tab-overview" class="tab-panel fade-in space-y-4">
-
-        <!-- Card Nhắc lịch cho ăn & Thông báo điện thoại -->
-        <section id="schedule-notification-card" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-4">
-          <!-- Render bằng JS -->
-        </section>
-
-        <!-- 4 Thẻ chỉ số nhanh (KPI Summary) -->
-        <section id="kpi-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <!-- Render bằng JS -->
-        </section>
-
-        <!-- Lịch sử chăm sóc & nhật ký -->
-        <section class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-          <div class="flex items-center justify-between gap-2 mb-3.5">
-            <div>
-              <h2 class="text-base font-bold text-slate-900">📋 Lịch sử ăn uống & Sức khỏe</h2>
-              <p class="text-xs text-slate-500">Sắp xếp theo thời gian mới nhất</p>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="logDate">Ngày ghi nhận</label>
+              <input type="date" id="logDate">
             </div>
-            <button
-              type="button"
-              onclick="switchTab('log')"
-              class="min-h-[44px] px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-xs transition shrink-0"
-            >
-              + Ghi nhật ký
-            </button>
-          </div>
-
-          <div id="logs-list-container" class="space-y-2.5">
-            <!-- Render bằng JS -->
-          </div>
-        </section>
-      </div>
-
-      <!-- ==================== TAB 2: FORM GHI NHẬT KÝ HẰNG NGÀY ==================== -->
-      <div id="tab-log" class="tab-panel hidden fade-in">
-        <form id="daily-log-form" onsubmit="handleSaveLog(event)" class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs space-y-5">
-          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-            <div>
-              <h2 class="text-base sm:text-lg font-extrabold text-slate-900">📝 Ghi nhật ký hằng ngày</h2>
-              <p class="text-xs text-slate-500">Đang ghi cho bé: <span id="form-gecko-name" class="font-bold text-brand-600"></span></p>
-            </div>
-            <button
-              type="button"
-              onclick="setFormNow()"
-              class="min-h-[40px] px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition"
-            >
-              🕒 Lấy giờ hiện tại
-            </button>
-          </div>
-
-          <!-- Ngày cho ăn & Giờ cho ăn -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label for="log-date" class="block text-xs font-bold text-slate-700 mb-1.5">Ngày cho ăn *</label>
-              <input
-                type="date"
-                id="log-date"
-                required
-                class="w-full min-h-[46px] px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none text-sm"
-              />
-            </div>
-
-            <div>
-              <label for="log-time" class="block text-xs font-bold text-slate-700 mb-1.5">Giờ cho ăn *</label>
-              <input
-                type="time"
-                id="log-time"
-                required
-                class="w-full min-h-[46px] px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none text-sm"
-              />
+            <div class="form-group">
+              <label for="logTime">Giờ cho ăn</label>
+              <input type="time" id="logTime">
             </div>
           </div>
 
-          <!-- Danh sách nhiều loại mồi trong 1 bữa -->
-          <div class="space-y-2.5">
-            <div class="flex items-center justify-between">
-              <label class="block text-xs font-bold text-slate-700">Loại mồi & Số lượng đã ăn</label>
-              <span class="text-[11px] text-slate-400">Để 0 nếu hôm nay nhịn ăn</span>
-            </div>
-
-            <div id="feeder-rows-container" class="space-y-2.5">
-              <!-- Các dòng mồi render động bằng JS -->
-            </div>
-
-            <button
-              type="button"
-              onclick="addFeederRow('Dế', 1)"
-              class="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl border border-dashed border-brand-400 bg-brand-50/70 hover:bg-brand-100/80 text-brand-700 text-xs font-bold transition"
-            >
-              <span>+ Thêm loại mồi khác</span>
-            </button>
+          <div class="form-group">
+            <label>Khẩu phần mồi đã ăn (có thể thêm nhiều loại)</label>
+            <div id="feederList"></div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addFeederRow()">+ Thêm loại mồi khác</button>
           </div>
 
-          <!-- Bổ sung dinh dưỡng (Tự đánh dấu thủ công) -->
-          <div class="space-y-2">
-            <label class="block text-xs font-bold text-slate-700">Bổ sung dinh dưỡng (tự đánh dấu)</label>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <!-- Pill 1: Canxi -->
-              <label class="cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  id="supp-canxi"
-                  value="Canxi"
-                  onchange="handleSupplementToggle('canxi')"
-                  class="peer sr-only"
-                />
-                <div class="min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 peer-checked:bg-sky-50 peer-checked:border-sky-500 peer-checked:text-sky-900 flex items-center justify-between transition">
-                  <span class="text-sm font-bold">🦴 Canxi</span>
-                  <span class="supp-check-icon w-5 h-5 rounded-md border border-slate-300 bg-white flex items-center justify-center text-xs font-extrabold text-sky-600"></span>
-                </div>
-              </label>
-
-              <!-- Pill 2: Multi vitamin D3 -->
-              <label class="cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  id="supp-multid3"
-                  value="Multi vitamin D3"
-                  onchange="handleSupplementToggle('multid3')"
-                  class="peer sr-only"
-                />
-                <div class="min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 peer-checked:bg-amber-50 peer-checked:border-amber-500 peer-checked:text-amber-900 flex items-center justify-between transition">
-                  <span class="text-sm font-bold">💊 Multi vitamin D3</span>
-                  <span class="supp-check-icon w-5 h-5 rounded-md border border-slate-300 bg-white flex items-center justify-center text-xs font-extrabold text-amber-600"></span>
-                </div>
-              </label>
-
-              <!-- Pill 3: Không rắc -->
-              <label class="cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  id="supp-none"
-                  value="Không rắc"
-                  checked
-                  onchange="handleSupplementToggle('none')"
-                  class="peer sr-only"
-                />
-                <div class="min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 peer-checked:bg-slate-200/80 peer-checked:border-slate-500 peer-checked:text-slate-900 flex items-center justify-between transition">
-                  <span class="text-sm font-bold">⚪ Không rắc</span>
-                  <span class="supp-check-icon w-5 h-5 rounded-md border border-slate-300 bg-white flex items-center justify-center text-xs font-extrabold text-slate-700">✓</span>
-                </div>
-              </label>
+          <div class="form-group">
+            <label>Bổ sung dinh dưỡng (tự đánh dấu)</label>
+            <div class="chip-group" id="suppChips">
+              <button type="button" class="chip" data-val="Canxi" onclick="toggleSupp(this)">Canxi</button>
+              <button type="button" class="chip" data-val="Multi vitamin D3" onclick="toggleSupp(this)">Multi vitamin D3</button>
+              <button type="button" class="chip selected" data-val="Không rắc" onclick="toggleSupp(this)">Không rắc</button>
             </div>
           </div>
 
-          <!-- Cân nặng & Tình trạng phân & Trạng thái lột xác -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <div>
-              <label for="log-weight" class="block text-xs font-bold text-slate-700 mb-1.5">
-                Cân nặng (gram) <span class="font-normal text-slate-400">- tùy chọn</span>
-              </label>
-              <input
-                type="number"
-                id="log-weight"
-                step="0.1"
-                min="0"
-                max="500"
-                placeholder="VD: 14.5"
-                class="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-brand-500 outline-none text-sm"
-              />
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="logWeight">Cân nặng hôm nay (gram)</label>
+              <input type="number" id="logWeight" step="0.1" min="0" placeholder="Bỏ trống nếu không cân">
             </div>
-
-            <div>
-              <label for="log-poop" class="block text-xs font-bold text-slate-700 mb-1.5">Tình trạng phân</label>
-              <select
-                id="log-poop"
-                class="w-full min-h-[46px] px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-brand-500 outline-none text-sm"
-              >
-                <option value="Chưa đi phân">⏳ Chưa đi phân</option>
-                <option value="Chuẩn (Nâu rắn + Urate trắng)">✅ Chuẩn (Nâu rắn + Urate trắng)</option>
-                <option value="Phân lột xác (Xám/Dai)">🔄 Phân lột xác (Xám/Dai)</option>
-                <option value="Hơi lỏng / Ướt">💧 Hơi lỏng / Ướt</option>
-                <option value="Bất thường (Tiêu chảy / Mùi nặng)">⚠️ Bất thường (Tiêu chảy / Mùi nặng)</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="log-status" class="block text-xs font-bold text-slate-700 mb-1.5">Trạng thái / Lột xác</label>
-              <select
-                id="log-status"
-                class="w-full min-h-[46px] px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-brand-500 outline-none text-sm"
-              >
-                <option value="Bình thường">😊 Bình thường</option>
-                <option value="Đang đục da (Sắp lột)">🌫️ Đang đục da (Sắp lột)</option>
-                <option value="Vừa lột xác xong">✨ Vừa lột xác xong</option>
-                <option value="Nằm hang nhiều / Nhát">🏠 Nằm hang nhiều / Nhát</option>
-                <option value="Bỏ ăn / Cần theo dõi">🩺 Bỏ ăn / Cần theo dõi</option>
+            <div class="form-group">
+              <label for="logStatus">Lột xác / Thể trạng</label>
+              <select id="logStatus">
+                <option value="Bình thường">Bình thường</option>
+                <option value="Đang đục da (Sắp lột)">Đang đục da (Sắp lột)</option>
+                <option value="Vừa lột xác xong">Vừa lột xác xong</option>
+                <option value="Nằm hang nhiều / Nhát">Nằm hang nhiều / Nhát</option>
+                <option value="Bỏ ăn / Cần theo dõi">Bỏ ăn / Cần theo dõi</option>
               </select>
             </div>
           </div>
 
-          <!-- Ghi chú -->
-          <div>
-            <label for="log-notes" class="block text-xs font-bold text-slate-700 mb-1.5">Ghi chú quan sát</label>
-            <input
-              type="text"
-              id="log-notes"
-              placeholder="Ví dụ: Đớp thẳng từ nhíp, nhiệt vùng nóng 31°C..."
-              class="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-brand-500 outline-none text-sm"
-            />
+          <div class="form-group">
+            <label for="logPoop">Tình trạng phân</label>
+            <select id="logPoop">
+              <option value="Chưa đi phân">Chưa đi phân</option>
+              <option value="Chuẩn (Nâu rắn + Urate trắng)">Chuẩn (Nâu rắn + Urate trắng)</option>
+              <option value="Phân lột xác (Xám/Dai)">Phân lột xác (Xám/Dai)</option>
+              <option value="Hơi lỏng / Ướt">Hơi lỏng / Ướt</option>
+              <option value="Bất thường (Tiêu chảy / Mùi nặng)">Bất thường (Tiêu chảy / Mùi nặng)</option>
+            </select>
           </div>
 
-          <div class="pt-1">
-            <button
-              type="submit"
-              class="w-full min-h-[50px] px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold text-sm sm:text-base shadow-sm transition"
-            >
-              💾 Lưu nhật ký
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <!-- ==================== TAB 3: BIỂU ĐỒ CÂN NẶNG (SVG LINE CHART) ==================== -->
-      <div id="tab-weight" class="tab-panel hidden fade-in space-y-4">
-        <!-- Nhập nhanh cân nặng -->
-        <form onsubmit="handleQuickWeightSave(event)" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-          <h2 class="text-base font-bold text-slate-900 mb-3">⚖️ Cập nhật cân nặng nhanh</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label for="quick-weight-date" class="block text-xs font-semibold text-slate-600 mb-1">Ngày cân</label>
-              <input
-                type="date"
-                id="quick-weight-date"
-                required
-                class="w-full min-h-[46px] px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-brand-500 outline-none text-sm"
-              />
-            </div>
-            <div>
-              <label for="quick-weight-val" class="block text-xs font-semibold text-slate-600 mb-1">Cân nặng (gram)</label>
-              <input
-                type="number"
-                id="quick-weight-val"
-                step="0.1"
-                min="0.5"
-                max="500"
-                required
-                placeholder="Ví dụ: 15.2"
-                class="w-full min-h-[46px] px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-brand-500 outline-none text-sm"
-              />
-            </div>
-            <div class="flex items-end">
-              <button
-                type="submit"
-                class="w-full min-h-[46px] px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-xs transition"
-              >
-                + Lưu cân nặng
-              </button>
-            </div>
-          </div>
-        </form>
-
-        <!-- Responsive SVG Line Chart Card -->
-        <section class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <div>
-              <h2 class="text-base font-bold text-slate-900">📈 Biểu đồ tăng trưởng (gram)</h2>
-              <p class="text-xs text-slate-500">Chạm hoặc di chuột vào các điểm để xem chi tiết</p>
-            </div>
-            <span id="chart-growth-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700">
-              --
-            </span>
+          <div class="form-group">
+            <label for="logNotes">Ghi chú quan sát</label>
+            <input type="text" id="logNotes" placeholder="VD: Đớp từ nhíp, nhiệt vùng nóng 31°C...">
           </div>
 
-          <div id="svg-chart-container" class="relative w-full bg-slate-50 rounded-xl border border-slate-200/70 p-2 overflow-hidden">
-            <svg id="weight-svg-chart" viewBox="0 0 640 260" class="w-full h-auto block select-none"></svg>
-            <div id="svg-tooltip" class="hidden pointer-events-none absolute z-10 bg-slate-900/95 text-white text-xs rounded-lg px-2.5 py-1.5 shadow-md whitespace-nowrap"></div>
-          </div>
-        </section>
+          <button class="btn btn-primary" onclick="saveLog()">💾 Lưu nhật ký</button>
+        </div>
 
-        <!-- Lịch sử các mốc cân nặng -->
-        <section class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-          <h3 class="text-sm font-bold text-slate-900 mb-2">Lịch sử các lần cân</h3>
-          <div id="weight-history-list" class="divide-y divide-slate-100">
-            <!-- Render bằng JS -->
-          </div>
-        </section>
-      </div>
+        <div class="card">
+          <div class="card-title">Lịch sử toàn bộ của bé</div>
+          <div id="allLogs"></div>
+        </div>
+      </section>
 
-      <!-- ==================== TAB 4: SAO LƯU & XUẤT / NHẬP DỮ LIỆU ==================== -->
-      <div id="tab-backup" class="tab-panel hidden fade-in space-y-4">
-        <section class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-          <div>
-            <h2 class="text-base sm:text-lg font-extrabold text-slate-900">💾 Sao lưu & Khôi phục dữ liệu</h2>
-            <p class="text-xs sm:text-sm text-slate-500 mt-1">
-              Dữ liệu được lưu tự động trên trình duyệt (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">LocalStorage</code>). Bạn có thể xuất tệp JSON để sao lưu hoặc chuyển sang máy khác.
-            </p>
-          </div>
+      <!-- TAB 3: CÂN NẶNG -->
+      <section id="tab-weight" class="tab-pane">
+        <div class="card">
+          <div class="card-title">📈 Biểu đồ phát triển cân nặng (gram)</div>
+          <div id="chartContainer" class="chart-wrap"></div>
+          <div id="chartTip" class="chart-tip">Chạm vào điểm tròn trên biểu đồ để xem chi tiết</div>
+        </div>
 
-          <div id="backup-stats-box" class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/70">
-            <!-- Render bằng JS -->
-          </div>
+        <div class="card">
+          <div class="card-title">Lịch sử cân nặng</div>
+          <div id="weightLogs"></div>
+        </div>
+      </section>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <button
-              type="button"
-              onclick="exportJSON()"
-              class="min-h-[48px] px-4 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-xs transition"
-            >
-              <span>⬇️ Xuất JSON (Sao lưu)</span>
-            </button>
-
-            <label
-              for="import-json-input"
-              class="min-h-[48px] px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-xs cursor-pointer transition"
-            >
-              <span>⬆️ Nhập JSON (Khôi phục)</span>
-              <input type="file" id="import-json-input" accept=".json,application/json" onchange="handleImportJSON(event)" class="hidden" />
-            </label>
-          </div>
-
-          <div class="border-t border-slate-100 pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <button
-              type="button"
-              onclick="exportCSV()"
-              class="min-h-[44px] px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold text-xs sm:text-sm transition"
-            >
-              📊 Xuất CSV (Mở bằng Excel)
-            </button>
-
-            <button
-              type="button"
-              onclick="confirmClearAllData()"
-              class="min-h-[44px] px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-xs sm:text-sm transition"
-            >
-              🗑️ Xóa toàn bộ dữ liệu trên máy
-            </button>
-          </div>
-        </section>
-      </div>
+      <!-- TAB 4: SAO LƯU -->
+      <section id="tab-backup" class="tab-pane">
+        <div class="card">
+          <div class="card-title">💾 Sao lưu & Khôi phục dữ liệu</div>
+          <p style="font-size:13px; color:var(--muted); line-height:1.5; margin-top:0;">
+            Dữ liệu được lưu trực tiếp trong bộ nhớ riêng của ứng dụng này. Hãy xuất file JSON định kỳ để lưu trữ an toàn hoặc chuyển dữ liệu sang máy khác.
+          </p>
+          <button class="btn btn-primary" onclick="exportJSON()" style="margin-bottom:10px;">📤 Xuất dữ liệu sao lưu (.json)</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin-bottom:10px;">📥 Nhập dữ liệu từ file (.json)</button>
+          <button class="btn btn-secondary" onclick="exportCSV()">📊 Xuất bảng tính Excel (.csv)</button>
+        </div>
+      </section>
 
     </div>
   </main>
 
-  <!-- ==================== MOBILE BOTTOM NAVIGATION ==================== -->
-  <nav id="mobile-bottom-nav" class="hidden md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200 px-2 py-1.5 grid grid-cols-4 gap-1 shadow-lg">
-    <button type="button" data-tab="overview" onclick="switchTab('overview')" class="nav-btn-mobile min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-bold transition">
-      <span class="text-base leading-none mb-1">📊</span>
-      <span>Tổng quan</span>
+  <input type="file" id="importFile" accept=".json,application/json" style="display:none;" onchange="importJSON(event)">
+
+  <!-- Bottom Tab Bar -->
+  <nav id="bottomNav" class="bottom-nav" style="display:none;">
+    <button class="nav-btn active" data-tab="overview" onclick="switchTab('overview')">
+      <span class="nav-ico">📊</span><span>Tổng quan</span>
     </button>
-    <button type="button" data-tab="log" onclick="switchTab('log')" class="nav-btn-mobile min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-bold transition">
-      <span class="text-base leading-none mb-1">📝</span>
-      <span>Ghi nhật ký</span>
+    <button class="nav-btn" data-tab="log" onclick="switchTab('log')">
+      <span class="nav-ico">📝</span><span>Ghi nhật ký</span>
     </button>
-    <button type="button" data-tab="weight" onclick="switchTab('weight')" class="nav-btn-mobile min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-bold transition">
-      <span class="text-base leading-none mb-1">📈</span>
-      <span>Cân nặng</span>
+    <button class="nav-btn" data-tab="weight" onclick="switchTab('weight')">
+      <span class="nav-ico">📈</span><span>Cân nặng</span>
     </button>
-    <button type="button" data-tab="backup" onclick="switchTab('backup')" class="nav-btn-mobile min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-bold transition">
-      <span class="text-base leading-none mb-1">💾</span>
-      <span>Sao lưu</span>
+    <button class="nav-btn" data-tab="backup" onclick="switchTab('backup')">
+      <span class="nav-ico">💾</span><span>Sao lưu</span>
     </button>
   </nav>
 
-  <!-- ==================== MODAL: THÊM / SỬA HỒ SƠ GECKO ==================== -->
-  <div id="profile-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200">
-      <div class="sticky top-0 bg-white px-5 py-4 border-b border-slate-100 flex items-center justify-between z-10">
-        <h3 id="profile-modal-title" class="text-base sm:text-lg font-extrabold text-slate-900">Thêm hồ sơ Gecko mới</h3>
-        <button type="button" onclick="closeProfileModal()" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">
-          ✕
-        </button>
+  <!-- Modal Thêm/Sửa hồ sơ bé -->
+  <div id="petModal" class="modal-backdrop" onclick="if(event.target===this) closePetModal()">
+    <div class="modal-sheet">
+      <div class="card-title">
+        <span id="modalTitle">Thêm hồ sơ bé Gecko</span>
+        <button onclick="closePetModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);">✕</button>
       </div>
 
-      <form id="profile-form" onsubmit="handleSaveProfile(event)" class="p-5 space-y-4">
-        <input type="hidden" id="prof-id" />
+      <div class="form-group">
+        <label for="petName">Tên bé *</label>
+        <input type="text" id="petName" placeholder="VD: Cam, Sữa...">
+      </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          <div>
-            <label for="prof-name" class="block text-xs font-bold text-slate-700 mb-1">Tên bé *</label>
-            <input
-              type="text"
-              id="prof-name"
-              required
-              placeholder="Ví dụ: Cam, Sữa..."
-              class="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 outline-none text-sm"
-            />
-          </div>
-
-          <div>
-            <label for="prof-gender" class="block text-xs font-bold text-slate-700 mb-1">Giới tính</label>
-            <select
-              id="prof-gender"
-              class="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 outline-none text-sm bg-white"
-            >
-              <option value="Đực">♂ Đực</option>
-              <option value="Cái">♀ Cái</option>
-              <option value="Chưa rõ (Baby)">• Chưa rõ (Baby)</option>
-            </select>
-          </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="petMorph">Morph (Dòng)</label>
+          <input type="text" id="petMorph" placeholder="VD: W&Y Tremper, SHTCT...">
         </div>
-
-        <!-- Morph / Dòng -->
-        <div>
-          <label for="prof-morph" class="block text-xs font-bold text-slate-700 mb-1">Morph / Dòng *</label>
-          <input
-            type="text"
-            id="prof-morph"
-            required
-            placeholder="Ví dụ: W&Y Tremper, Tremper Het Eclipse, SHTCT..."
-            class="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 outline-none text-sm"
-          />
-          <div class="flex flex-wrap gap-1.5 mt-2">
-            <button type="button" onclick="setMorphPreset('W&Y Tremper')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-brand-100 text-xs font-medium text-slate-700">W&Y Tremper</button>
-            <button type="button" onclick="setMorphPreset('Tremper Het Eclipse')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-brand-100 text-xs font-medium text-slate-700">Tremper Het Eclipse</button>
-            <button type="button" onclick="setMorphPreset('SHTCT')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-brand-100 text-xs font-medium text-slate-700">SHTCT</button>
-            <button type="button" onclick="setMorphPreset('Mack Snow')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-brand-100 text-xs font-medium text-slate-700">Mack Snow</button>
-          </div>
+        <div class="form-group">
+          <label for="petGender">Giới tính</label>
+          <select id="petGender">
+            <option value="Đực">Đực</option>
+            <option value="Cái">Cái</option>
+            <option value="Chưa rõ (Baby)">Chưa rõ (Baby)</option>
+          </select>
         </div>
+      </div>
 
-        <!-- Ngày nở / Tuổi -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          <div>
-            <label for="prof-hatch-date" class="block text-xs font-bold text-slate-700 mb-1">Ngày nở (nếu biết)</label>
-            <input
-              type="date"
-              id="prof-hatch-date"
-              class="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 outline-none text-sm"
-            />
-          </div>
-
-          <div>
-            <label for="prof-age-text" class="block text-xs font-bold text-slate-700 mb-1">Hoặc tuổi ước tính</label>
-            <input
-              type="text"
-              id="prof-age-text"
-              placeholder="Ví dụ: ~2 tháng tuổi"
-              class="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 outline-none text-sm"
-            />
-          </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="petAge">Tuổi hoặc Ngày nở</label>
+          <input type="text" id="petAge" placeholder="VD: 3 tháng hoặc 2026-08-15">
         </div>
-
-        <!-- Chu kỳ cho ăn & Giờ cho ăn mặc định -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          <div>
-            <label for="prof-interval" class="block text-xs font-bold text-slate-700 mb-1">Chu kỳ cho ăn (ngày/lần)</label>
-            <input
-              type="number"
-              id="prof-interval"
-              min="1"
-              max="14"
-              value="2"
-              required
-              class="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 outline-none text-sm"
-            />
-            <p class="text-[11px] text-slate-400 mt-1">Baby: 1–2 ngày • Adult: 3–4 ngày</p>
-          </div>
-
-          <div>
-            <label for="prof-feed-time" class="block text-xs font-bold text-slate-700 mb-1">Giờ cho ăn mặc định</label>
-            <input
-              type="time"
-              id="prof-feed-time"
-              value="20:00"
-              required
-              class="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 outline-none text-sm"
-            />
-            <p class="text-[11px] text-slate-400 mt-1">Dùng để tính lịch nhắc & thông báo</p>
-          </div>
+        <div class="form-group">
+          <label for="petCycle">Chu kỳ cho ăn (ngày/lần)</label>
+          <input type="number" id="petCycle" min="1" max="14" value="2">
         </div>
+      </div>
 
-        <div>
-          <label for="prof-note" class="block text-xs font-bold text-slate-700 mb-1">Ghi chú chăm sóc (tùy chọn)</label>
-          <input
-            type="text"
-            id="prof-note"
-            placeholder="Ví dụ: Nhiệt vùng nóng 30-32°C, nhạy sáng..."
-            class="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 outline-none text-sm"
-          />
-        </div>
+      <div class="form-group">
+        <label for="petFeedTime">Giờ cho ăn mặc định</label>
+        <input type="time" id="petFeedTime" value="19:00">
+      </div>
 
-        <div class="pt-2 flex items-center gap-2.5">
-          <button
-            type="button"
-            onclick="closeProfileModal()"
-            class="flex-1 min-h-[46px] px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm"
-          >
-            Hủy
-          </button>
-          <button
-            type="submit"
-            class="flex-1 min-h-[46px] px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-xs"
-          >
-            Lưu hồ sơ
-          </button>
-        </div>
-      </form>
+      <div class="form-group">
+        <label for="petNote">Ghi chú thêm (nhiệt độ nuôi, đặc điểm...)</label>
+        <input type="text" id="petNote" placeholder="VD: Vùng nóng 30-32°C">
+      </div>
+
+      <button class="btn btn-primary" onclick="savePet()">Lưu hồ sơ</button>
     </div>
   </div>
 
-  <!-- ==================== CUSTOM CONFIRM MODAL ==================== -->
-  <div id="confirm-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl border border-slate-200 space-y-4">
-      <div class="space-y-1.5">
-        <h3 id="confirm-title" class="text-base font-extrabold text-slate-900">Xác nhận</h3>
-        <p id="confirm-message" class="text-sm text-slate-600 leading-relaxed"></p>
-      </div>
-      <div class="flex items-center gap-2.5 pt-1">
-        <button
-          type="button"
-          onclick="closeConfirmModal()"
-          class="flex-1 min-h-[44px] px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm"
-        >
-          Hủy bỏ
-        </button>
-        <button
-          type="button"
-          id="confirm-ok-btn"
-          class="flex-1 min-h-[44px] px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm"
-        >
-          Đồng ý
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== TOAST NOTIFICATION ==================== -->
-  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-[92vw]"></div>
-
-  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
   <script>
-    const STORAGE_KEY = 'gecko_care_tracker_v2';
+    const STORAGE_KEY = 'gecko_care_tracker_pwa_v1';
+    let state = loadState();
+    let editingPetId = null;
+    let swReg = null;
+    let lastNotifiedKey = '';
 
-    const FEEDER_OPTIONS = [
-      'Gián Dubia',
-      'Dế',
-      'Sâu quy (Mealworm)',
-      'Sâu Superworm',
-      'Sâu sáp (Waxworm)',
-      'Khác'
-    ];
-
-    // Trạng thái khởi tạo hoàn toàn trống dữ liệu mẫu
-    let appState = {
-      geckos: [],
-      activeGeckoId: null,
-      notificationsEnabled: false,
-      firedNotifications: {}
-    };
-
-    let currentTab = 'overview';
-    let feederRows = [];
-
-    // ==================== TIỆN ÍCH NGÀY & GIỜ ====================
-    function getTodayStr() {
-      const now = new Date();
-      const y = now.getFullYear();
-      const m = String(now.getMonth() + 1).padStart(2, '0');
-      const d = String(now.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
+    // Đăng ký Service Worker cho PWA độc lập
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').then((reg) => {
+        swReg = reg;
+      }).catch(() => {});
     }
 
-    function getCurrentTimeStr() {
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2, '0');
-      const mm = String(now.getMinutes()).padStart(2, '0');
-      return `${hh}:${mm}`;
-    }
-
-    function parseLocalDate(dateStr) {
-      if (!dateStr) return null;
-      const parts = dateStr.split('-').map(Number);
-      if (parts.length !== 3) return null;
-      return new Date(parts[0], parts[1] - 1, parts[2]);
-    }
-
-    function addDaysToStr(dateStr, days) {
-      const dt = parseLocalDate(dateStr);
-      if (!dt) return getTodayStr();
-      dt.setDate(dt.getDate() + Number(days || 0));
-      const y = dt.getFullYear();
-      const m = String(dt.getMonth() + 1).padStart(2, '0');
-      const d = String(dt.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
-
-    function diffCalendarDays(fromDateStr, toDateStr) {
-      const d1 = parseLocalDate(fromDateStr);
-      const d2 = parseLocalDate(toDateStr);
-      if (!d1 || !d2) return 0;
-      const msPerDay = 24 * 60 * 60 * 1000;
-      return Math.round((d2 - d1) / msPerDay);
-    }
-
-    function formatDateVN(dateStr) {
-      const parts = (dateStr || '').split('-');
-      if (parts.length !== 3) return dateStr || '-';
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-
-    function formatShortDateVN(dateStr) {
-      const parts = (dateStr || '').split('-');
-      if (parts.length !== 3) return dateStr || '-';
-      return `${parts[2]}/${parts[1]}`;
-    }
-
-    function calculateAgeDisplay(gecko) {
-      if (gecko.hatchDate) {
-        const days = diffCalendarDays(gecko.hatchDate, getTodayStr());
-        if (days >= 0) {
-          const months = Math.floor(days / 30);
-          const weeks = Math.floor(days / 7);
-          if (months >= 12) {
-            return `${(days / 365).toFixed(1)} năm (${months} tháng)`;
-          }
-          if (months >= 1) {
-            return `~${months} tháng (${weeks} tuần)`;
-          }
-          return `${weeks} tuần (${days} ngày)`;
-        }
-      }
-      return gecko.ageText || 'Chưa rõ tuổi';
-    }
-
-    function escapeHtml(str) {
-      if (str === null || str === undefined) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    // ==================== LOCALSTORAGE ====================
     function loadState() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed && Array.isArray(parsed.geckos)) {
-            appState = {
-              geckos: parsed.geckos,
-              activeGeckoId: parsed.activeGeckoId || (parsed.geckos[0] ? parsed.geckos[0].id : null),
-              notificationsEnabled: Boolean(parsed.notificationsEnabled),
-              firedNotifications: parsed.firedNotifications || {}
-            };
-            return;
-          }
+          if (Array.isArray(parsed.geckos)) return parsed;
         }
-      } catch (e) {
-        console.error('Lỗi đọc LocalStorage:', e);
-      }
-      // Mặc định hoàn toàn trống
-      appState = {
-        geckos: [],
-        activeGeckoId: null,
-        notificationsEnabled: false,
-        firedNotifications: {}
-      };
+      } catch (e) {}
+      return { geckos: [], activeId: null, notifEnabled: false };
     }
 
     function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-      } catch (e) {
-        showToast('Không thể lưu vào trình duyệt (bộ nhớ đầy).', 'error');
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function showToast(msg, type = '') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'toast show ' + type;
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => { el.className = 'toast'; }, 3200);
+    }
+
+    function getActivePet() {
+      return state.geckos.find((g) => g.id === state.activeId) || null;
+    }
+
+    function todayISO() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function formatVNDate(iso) {
+      if (!iso || !iso.includes('-')) return iso || '--/--/----';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    function isStandaloneMode() {
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+
+    // Chuyển Tab
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-pane').forEach((el) => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach((el) => el.classList.remove('active'));
+      document.getElementById('tab-' + tabName).classList.add('active');
+      document.querySelector(`.nav-btn[data-tab="${tabName}"]`).classList.add('active');
+
+      if (tabName === 'log') initLogForm();
+      if (tabName === 'weight') renderWeightChart();
+    }
+
+    // Quản lý Modal Hồ Sơ
+    function openPetModal(isEdit) {
+      const modal = document.getElementById('petModal');
+      if (isEdit) {
+        const pet = getActivePet();
+        if (!pet) return;
+        editingPetId = pet.id;
+        document.getElementById('modalTitle').textContent = 'Sửa hồ sơ ' + pet.name;
+        document.getElementById('petName').value = pet.name;
+        document.getElementById('petMorph').value = pet.morph || '';
+        document.getElementById('petGender').value = pet.gender || 'Chưa rõ (Baby)';
+        document.getElementById('petAge').value = pet.age || '';
+        document.getElementById('petCycle').value = pet.cycleDays || 2;
+        document.getElementById('petFeedTime').value = pet.feedTime || '19:00';
+        document.getElementById('petNote').value = pet.note || '';
+      } else {
+        editingPetId = null;
+        document.getElementById('modalTitle').textContent = 'Thêm hồ sơ bé Gecko';
+        document.getElementById('petName').value = '';
+        document.getElementById('petMorph').value = '';
+        document.getElementById('petGender').value = 'Chưa rõ (Baby)';
+        document.getElementById('petAge').value = '';
+        document.getElementById('petCycle').value = 2;
+        document.getElementById('petFeedTime').value = '19:00';
+        document.getElementById('petNote').value = '';
       }
+      modal.classList.add('open');
     }
 
-    function getActiveGecko() {
-      return appState.geckos.find(g => g.id === appState.activeGeckoId) || null;
+    function closePetModal() {
+      document.getElementById('petModal').classList.remove('open');
     }
 
-    // ==================== TOAST & CONFIRM MODAL ====================
-    function showToast(message, type = 'success') {
-      const container = document.getElementById('toast-container');
-      const el = document.createElement('div');
-      const colors =
-        type === 'error'
-          ? 'bg-rose-600 text-white'
-          : type === 'info'
-          ? 'bg-slate-800 text-white'
-          : 'bg-emerald-600 text-white';
-      el.className = `${colors} px-4 py-3 rounded-xl shadow-lg text-xs sm:text-sm font-semibold transition-all duration-200`;
-      el.textContent = message;
-      container.appendChild(el);
-
-      setTimeout(() => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(-6px)';
-        setTimeout(() => el.remove(), 220);
-      }, 2800);
-    }
-
-    let pendingConfirmCallback = null;
-
-    function openConfirmModal(title, message, onConfirm) {
-      document.getElementById('confirm-title').textContent = title;
-      document.getElementById('confirm-message').textContent = message;
-      pendingConfirmCallback = onConfirm;
-      document.getElementById('confirm-modal').classList.remove('hidden');
-    }
-
-    function closeConfirmModal() {
-      document.getElementById('confirm-modal').classList.add('hidden');
-      pendingConfirmCallback = null;
-    }
-
-    document.getElementById('confirm-ok-btn').addEventListener('click', () => {
-      if (typeof pendingConfirmCallback === 'function') {
-        pendingConfirmCallback();
+    function savePet() {
+      const name = document.getElementById('petName').value.trim();
+      if (!name) {
+        showToast('Vui lòng nhập tên của bé!', 'err');
+        return;
       }
-      closeConfirmModal();
-    });
+      const morph = document.getElementById('petMorph').value.trim() || 'Normal';
+      const gender = document.getElementById('petGender').value;
+      const age = document.getElementById('petAge').value.trim();
+      const cycleDays = Math.max(1, parseInt(document.getElementById('petCycle').value, 10) || 2);
+      const feedTime = document.getElementById('petFeedTime').value || '19:00';
+      const note = document.getElementById('petNote').value.trim();
 
-    // ==================== TÍNH TOÁN LỊCH CHO ĂN TIẾP THEO ====================
-    function getNextFeedingSchedule(gecko) {
-      const todayStr = getTodayStr();
-      const defaultTime = gecko.defaultFeedTime || '20:00';
-      const interval = Number(gecko.feedingIntervalDays || 2);
+      if (editingPetId) {
+        const pet = state.geckos.find((g) => g.id === editingPetId);
+        if (pet) {
+          Object.assign(pet, { name, morph, gender, age, cycleDays, feedTime, note });
+        }
+        showToast('Đã cập nhật hồ sơ!', 'ok');
+      } else {
+        const newPet = {
+          id: 'gecko_' + Date.now(),
+          name,
+          morph,
+          gender,
+          age,
+          cycleDays,
+          feedTime,
+          note,
+          logs: []
+        };
+        state.geckos.push(newPet);
+        state.activeId = newPet.id;
+        showToast('Đã tạo hồ sơ cho ' + name + '!', 'ok');
+      }
+      saveState();
+      closePetModal();
+      renderAll();
+    }
 
-      // Lọc các bữa có tổng số lượng mồi > 0
-      const feedingLogs = (gecko.logs || [])
-        .filter(l => {
-          const total = (l.feeders || []).reduce((sum, f) => sum + Number(f.count || 0), 0);
-          return total > 0;
-        })
-        .sort((a, b) => `${b.date} ${b.time || '00:00'}`.localeCompare(`${a.date} ${a.time || '00:00'}`));
+    function deleteCurrentPet() {
+      const pet = getActivePet();
+      if (!pet) return;
+      if (!confirm(`Xóa toàn bộ hồ sơ và dữ liệu của bé "${pet.name}"?`)) return;
+      state.geckos = state.geckos.filter((g) => g.id !== pet.id);
+      state.activeId = state.geckos.length ? state.geckos[0].id : null;
+      saveState();
+      renderAll();
+      showToast('Đã xóa hồ sơ');
+    }
 
-      if (feedingLogs.length === 0) {
+    // Tính toán lịch cho ăn tiếp theo
+    function getNextFeedingInfo(pet) {
+      const feedTime = pet.feedTime || '19:00';
+      const cycle = Math.max(1, Number(pet.cycleDays) || 2);
+      const mealLogs = [...(pet.logs || [])]
+        .filter((l) => Array.isArray(l.feeders) && l.feeders.some((f) => f.count > 0))
+        .sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
+
+      if (!mealLogs.length) {
         return {
-          hasHistory: false,
-          nextDate: todayStr,
-          nextTime: defaultTime,
-          daysDiff: 0,
-          lastFeedSummary: 'Chưa có bữa ăn nào được ghi nhận'
+          isoDate: todayISO(),
+          time: feedTime,
+          subText: 'Chưa có bữa ăn nào được ghi nhận',
+          badgeText: '🍽️ Chưa có bữa ăn',
+          badgeClass: 'st-none'
         };
       }
 
-      const latest = feedingLogs[0];
-      const nextDate = addDaysToStr(latest.date, interval);
-      const daysDiff = diffCalendarDays(todayStr, nextDate);
-      const feederText = formatFeedersSummary(latest.feeders);
+      const lastMeal = mealLogs[0];
+      const [y, m, d] = lastMeal.date.split('-').map(Number);
+      const nextDateObj = new Date(y, m - 1, d + cycle);
+      const nextISO = `${nextDateObj.getFullYear()}-${String(nextDateObj.getMonth() + 1).padStart(2, '0')}-${String(nextDateObj.getDate()).padStart(2, '0')}`;
+
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const diffDays = Math.round((nextDateObj - todayStart) / 86400000);
+
+      let badgeText = '';
+      let badgeClass = 'st-ok';
+      if (diffDays < 0) {
+        badgeText = `⚠️ Quá lịch ${Math.abs(diffDays)} ngày`;
+        badgeClass = 'st-late';
+      } else if (diffDays === 0) {
+        badgeText = `🔔 Đến lịch hôm nay lúc ${feedTime}`;
+        badgeClass = 'st-due';
+      } else {
+        badgeText = `⏳ Còn ${diffDays} ngày nữa`;
+        badgeClass = 'st-ok';
+      }
 
       return {
-        hasHistory: true,
-        nextDate,
-        nextTime: defaultTime,
-        daysDiff,
-        lastFeedSummary: `Bữa gần nhất: ${formatDateVN(latest.date)} lúc ${latest.time || defaultTime} (${feederText})`
+        isoDate: nextISO,
+        time: feedTime,
+        subText: `Bữa gần nhất: ${formatVNDate(lastMeal.date)} lúc ${lastMeal.time || feedTime}`,
+        badgeText,
+        badgeClass
       };
     }
 
-    function formatFeedersSummary(feeders) {
-      if (!Array.isArray(feeders) || feeders.length === 0) return 'Không cho ăn';
-      const valid = feeders.filter(f => Number(f.count) > 0);
-      if (valid.length === 0) return 'Không cho ăn';
-      return valid.map(f => `${f.count} ${f.type}`).join(' + ');
-    }
-
-    // ==================== THÔNG BÁO GIỜ CHO ĂN & FILE LỊCH (.ICS) ====================
-    async function toggleFeedingNotification() {
-      const gecko = getActiveGecko();
-      if (!gecko) return;
-
-      if (appState.notificationsEnabled) {
-        appState.notificationsEnabled = false;
+    // Thông báo & Xuất Lịch .ics
+    async function toggleNotifications() {
+      if (!('Notification' in window)) {
+        showToast('Hãy thêm app ra Màn hình chính trước để bật thông báo!', 'err');
+        return;
+      }
+      if (Notification.permission === 'granted') {
+        state.notifEnabled = !state.notifEnabled;
         saveState();
-        renderScheduleCard();
-        showToast('Đã tắt thông báo nhắc giờ cho ăn.', 'info');
+        updateNotifUI();
+        showToast(state.notifEnabled ? 'Đã bật nhắc giờ cho ăn!' : 'Đã tắt nhắc giờ cho ăn');
         return;
       }
-
-      if (!('Notification' in window)) {
-        showToast('Trình duyệt này chưa hỗ trợ Web Notification. Bạn hãy dùng nút "Thêm vào Lịch (.ics)" bên cạnh nhé!', 'error');
-        return;
-      }
-
-      try {
-        let perm = Notification.permission;
-        if (perm === 'default') {
-          perm = await Notification.requestPermission();
-        }
-
-        if (perm === 'granted') {
-          appState.notificationsEnabled = true;
-          saveState();
-          renderScheduleCard();
-          showToast(`Đã bật thông báo nhắc cho ăn lúc ${gecko.defaultFeedTime || '20:00'}!`);
-          checkFeedingNotifications();
-        } else {
-          showToast('Bạn đã chặn quyền thông báo trên trình duyệt. Hãy mở Cài đặt trang web để cho phép hoặc dùng nút Thêm vào Lịch (.ics).', 'error');
-        }
-      } catch (err) {
-        showToast('Không thể yêu cầu quyền thông báo trên thiết bị này. Hãy thử nút Thêm vào Lịch (.ics).', 'error');
+      const perm = await Notification.requestPermission();
+      if (perm === 'granted') {
+        state.notifEnabled = true;
+        saveState();
+        updateNotifUI();
+        showToast('Đã cấp quyền thông báo thành công!', 'ok');
+      } else {
+        showToast('Bạn chưa cấp quyền thông báo. Hãy bật trong Cài đặt iPhone.', 'err');
       }
     }
 
-    function sendTestNotification() {
-      const gecko = getActiveGecko();
-      if (!gecko) return;
+    async function sendTestNotification() {
+      const pet = getActivePet();
+      const title = pet ? `🦎 Đến giờ cho ${pet.name} ăn!` : '🦎 Gecko Care Tracker';
+      const body = pet
+        ? `Khẩu phần định kỳ lúc ${pet.feedTime || '19:00'} (${pet.morph}).`
+        : 'Thông báo hoạt động tốt!';
 
       if (!('Notification' in window)) {
-        showToast('Trình duyệt không hỗ trợ thông báo trực tiếp. Hãy dùng nút Thêm vào Lịch (.ics).', 'error');
+        showToast('Hãy mở app từ Màn hình chính để dùng thông báo!', 'err');
         return;
       }
-
       if (Notification.permission !== 'granted') {
-        Notification.requestPermission().then(perm => {
-          if (perm === 'granted') {
-            appState.notificationsEnabled = true;
-            saveState();
-            renderScheduleCard();
-            triggerSystemNotification(
-              `🦎 Thử thông báo: Đến giờ cho ${gecko.name} ăn!`,
-              `Lịch mặc định: ${gecko.defaultFeedTime || '20:00'} (${gecko.morph}). Thông báo hoạt động tốt trên thiết bị của bạn!`
-            );
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          showToast('Vui lòng cho phép thông báo để thử tính năng này.', 'err');
+          return;
+        }
+        state.notifEnabled = true;
+        saveState();
+        updateNotifUI();
+      }
+      if (swReg && swReg.showNotification) {
+        swReg.showNotification(title, { body, icon: './icon.svg', tag: 'gecko-test' });
+      } else {
+        new Notification(title, { body, icon: './icon.svg' });
+      }
+      showToast('Đã gửi thông báo thử!', 'ok');
+    }
+
+    function updateNotifUI() {
+      const btn = document.getElementById('btnNotifToggle');
+      const hint = document.getElementById('iosHint');
+      const granted = 'Notification' in window && Notification.permission === 'granted' && state.notifEnabled;
+
+      if (granted) {
+        btn.textContent = '✅ Đang bật thông báo giờ ăn (Nhấn để tắt)';
+        btn.style.background = '#16A34A';
+      } else {
+        btn.textContent = '🔔 Bật thông báo giờ cho ăn';
+        btn.style.background = '#EA580C';
+      }
+
+      if (isStandaloneMode()) {
+        hint.innerHTML = '✅ <b>Đang chạy ở chế độ App độc lập.</b> Bạn có thể bật thông báo trực tiếp ở nút trên hoặc bấm <b>Thêm vào Lịch (.ics)</b> để iPhone tự động đổ chuông lặp lại theo chu kỳ ngay cả khi tắt hẳn app.';
+      } else {
+        hint.innerHTML = '💡 <b>Mẹo cài App độc lập trên iPhone:</b> Bấm nút <b>Chia sẻ</b> (ô vuông có mũi tên lên ở dưới Safari) → chọn <b>Thêm vào Màn hình chính</b>. Mở icon ngoài màn hình chính sẽ chạy toàn màn hình không qua Safari và bật được thông báo.';
+      }
+    }
+
+    // Kiểm tra đúng giờ cho ăn mỗi 30 giây khi mở app
+    setInterval(() => {
+      if (!state.notifEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+      const now = new Date();
+      const curDate = todayISO();
+      const curTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      state.geckos.forEach((pet) => {
+        const info = getNextFeedingInfo(pet);
+        const key = `${pet.id}_${curDate}_${curTime}`;
+        if (info.isoDate === curDate && info.time === curTime && lastNotifiedKey !== key) {
+          lastNotifiedKey = key;
+          const title = `🦎 Đến giờ cho ${pet.name} ăn (${curTime})`;
+          const body = `Chuẩn bị mồi và khoáng chất cho ${pet.name} (${pet.morph}).`;
+          if (swReg && swReg.showNotification) {
+            swReg.showNotification(title, { body, icon: './icon.svg', tag: key });
           } else {
-            showToast('Vui lòng cấp quyền thông báo trước khi thử.', 'error');
-          }
-        });
-        return;
-      }
-
-      triggerSystemNotification(
-        `🦎 Thử thông báo: Đến giờ cho ${gecko.name} ăn!`,
-        `Lịch mặc định: ${gecko.defaultFeedTime || '20:00'} (${gecko.morph}). Thông báo hoạt động tốt trên thiết bị của bạn!`
-      );
-      showToast('Đã gửi thông báo thử nghiệm lên thiết bị!');
-    }
-
-    function triggerSystemNotification(title, body, tag) {
-      try {
-        new Notification(title, {
-          body,
-          tag: tag || 'gecko-feed-reminder'
-        });
-      } catch (e) {
-        console.warn('Không thể hiển thị Notification trực tiếp:', e);
-      }
-    }
-
-    function checkFeedingNotifications() {
-      if (!appState.notificationsEnabled) return;
-      if (!('Notification' in window) || Notification.permission !== 'granted') return;
-
-      const todayStr = getTodayStr();
-      const nowTimeStr = getCurrentTimeStr();
-
-      appState.geckos.forEach(gecko => {
-        const sched = getNextFeedingSchedule(gecko);
-        const targetTime = sched.nextTime || '20:00';
-
-        // Kích hoạt khi đã tới hoặc quá ngày cho ăn và trùng giờ phút hiện tại
-        if (todayStr >= sched.nextDate && nowTimeStr === targetTime) {
-          const notifKey = `${gecko.id}_${todayStr}_${targetTime}`;
-          if (!appState.firedNotifications[notifKey]) {
-            triggerSystemNotification(
-              `🦎 Đến giờ cho ${gecko.name} ăn rồi!`,
-              `Lịch cho ăn lúc ${targetTime} (${gecko.morph}). Nhớ kiểm tra khẩu phần mồi và khoáng chất nhé!`,
-              notifKey
-            );
-            appState.firedNotifications[notifKey] = true;
-            saveState();
-            showToast(`🔔 Đến giờ cho ${gecko.name} ăn (${targetTime})!`, 'info');
+            new Notification(title, { body });
           }
         }
       });
-    }
+    }, 30000);
 
-    function downloadCalendarICS() {
-      const gecko = getActiveGecko();
-      if (!gecko) return;
+    // Xuất lịch .ics lặp định kỳ theo chu kỳ ăn
+    function downloadICS() {
+      const pet = getActivePet();
+      if (!pet) return;
+      const info = getNextFeedingInfo(pet);
+      const cycle = Math.max(1, Number(pet.cycleDays) || 2);
+      const dtStart = info.isoDate.replace(/-/g, '') + 'T' + info.time.replace(':', '') + '00';
+      const [hh, mm] = info.time.split(':').map(Number);
+      const endMin = (mm + 15) % 60;
+      const endHour = (hh + Math.floor((mm + 15) / 60)) % 24;
+      const dtEnd = info.isoDate.replace(/-/g, '') + 'T' + String(endHour).padStart(2, '0') + String(endMin).padStart(2, '0') + '00';
 
-      const sched = getNextFeedingSchedule(gecko);
-      const dateCompact = sched.nextDate.replace(/-/g, '');
-      const [hh, mm] = (sched.nextTime || '20:00').split(':');
-      const startStamp = `${dateCompact}T${hh}${mm}00`;
-
-      // Kết thúc sau 15 phút
-      const endMin = (parseInt(mm, 10) + 15) % 60;
-      const endHour = (parseInt(hh, 10) + Math.floor((parseInt(mm, 10) + 15) / 60)) % 24;
-      const endStamp = `${dateCompact}T${String(endHour).padStart(2, '0')}${String(endMin).padStart(2, '0')}00`;
-
-      const interval = Number(gecko.feedingIntervalDays || 2);
-      const icsLines = [
+      const ics = [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
-        'PRODID:-//Gecko Care Tracker//VN',
-        'CALSCALE:GREGORIAN',
+        'PRODID:-//Gecko Care Tracker//VI',
         'BEGIN:VEVENT',
-        `UID:${gecko.id}-${Date.now()}@geckocaretracker`,
-        `DTSTAMP:${dateCompact}T000000Z`,
-        `DTSTART:${startStamp}`,
-        `DTEND:${endStamp}`,
-        `RRULE:FREQ=DAILY;INTERVAL=${interval}`,
-        `SUMMARY:🦎 Cho ${gecko.name} ăn (${gecko.morph})`,
-        `DESCRIPTION:Lịch cho Leopard Gecko ${gecko.name} ăn định kỳ mỗi ${interval} ngày. Kiểm tra mồi và rắc khoáng Canxi / Multi vitamin D3.`,
+        `UID:gecko-${pet.id}-${Date.now()}@geckocare`,
+        `DTSTAMP:${dtStart}`,
+        `DTSTART:${dtStart}`,
+        `DTEND:${dtEnd}`,
+        `RRULE:FREQ=DAILY;INTERVAL=${cycle}`,
+        `SUMMARY:🦎 Cho ${pet.name} ăn (${pet.morph})`,
+        `DESCRIPTION:Lịch cho ${pet.name} ăn định kỳ mỗi ${cycle} ngày lúc ${info.time}.`,
         'BEGIN:VALARM',
         'TRIGGER:PT0M',
         'ACTION:DISPLAY',
-        `DESCRIPTION:Đến giờ cho ${gecko.name} ăn!`,
+        `DESCRIPTION:Đến giờ cho ${pet.name} ăn!`,
         'END:VALARM',
         'END:VEVENT',
         'END:VCALENDAR'
       ].join('\r\n');
 
-      const blob = new Blob([icsLines], { type: 'text/calendar;charset=utf-8' });
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Lich_cho_${gecko.name}_an.ics`;
+      a.download = `Lich_cho_${pet.name}_an.ics`;
       document.body.appendChild(a);
       a.click();
-      a.remove();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('Đã tải tệp Lịch (.ics). Mở tệp này để điện thoại tự báo chuông đúng giờ!');
+      showToast('Đã tạo lịch nhắc lặp định kỳ!', 'ok');
     }
 
-    // ==================== RENDER GIAO DIỆN ====================
-    function renderAll() {
-      const hasGeckos = appState.geckos.length > 0;
-      document.getElementById('empty-state-view').classList.toggle('hidden', hasGeckos);
-      document.getElementById('dashboard-view').classList.toggle('hidden', !hasGeckos);
-      document.getElementById('gecko-tabs-bar').classList.toggle('hidden', !hasGeckos);
-      document.getElementById('mobile-bottom-nav').classList.toggle('hidden', !hasGeckos);
+    // Form Ghi Nhật Ký
+    function initLogForm() {
+      const pet = getActivePet();
+      document.getElementById('logDate').value = todayISO();
+      document.getElementById('logTime').value = (pet && pet.feedTime) || '19:00';
+      document.getElementById('logWeight').value = '';
+      document.getElementById('logNotes').value = '';
+      document.getElementById('logPoop').value = 'Chưa đi phân';
+      document.getElementById('logStatus').value = 'Bình thường';
 
-      if (!hasGeckos) return;
+      const list = document.getElementById('feederList');
+      list.innerHTML = '';
+      addFeederRow('Gián Dubia', 2);
 
-      renderGeckoPills();
-      renderActiveProfileCard();
-      renderScheduleCard();
-      renderKPICards();
-      renderLogsList();
-      prepareLogForm();
-      renderWeightHistoryList();
-      renderBackupStats();
-
-      if (currentTab === 'weight') {
-        drawWeightSVGChart();
-      }
-    }
-
-    function renderGeckoPills() {
-      const list = document.getElementById('gecko-pill-list');
-      list.innerHTML = appState.geckos
-        .map(g => {
-          const isActive = g.id === appState.activeGeckoId;
-          const icon = g.gender === 'Đực' ? '♂' : g.gender === 'Cái' ? '♀' : '•';
-          const cls = isActive
-            ? 'bg-brand-600 text-white shadow-xs ring-2 ring-brand-600/20'
-            : 'bg-slate-100 hover:bg-slate-200 text-slate-700';
-          return `
-            <button
-              type="button"
-              onclick="selectGecko('${g.id}')"
-              class="min-h-[40px] shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold transition ${cls}"
-            >
-              <span>${icon} ${escapeHtml(g.name)}</span>
-              <span class="text-[11px] font-medium opacity-85">(${escapeHtml(g.morph)})</span>
-            </button>
-          `;
-        })
-        .join('');
-    }
-
-    function renderActiveProfileCard() {
-      const card = document.getElementById('active-profile-card');
-      const gecko = getActiveGecko();
-      if (!gecko) return;
-
-      const ageDisplay = calculateAgeDisplay(gecko);
-      const genderBadge =
-        gecko.gender === 'Đực'
-          ? '<span class="px-2.5 py-0.5 rounded-md bg-sky-50 text-sky-700 font-semibold text-xs">♂ Đực</span>'
-          : gecko.gender === 'Cái'
-          ? '<span class="px-2.5 py-0.5 rounded-md bg-pink-50 text-pink-700 font-semibold text-xs">♀ Cái</span>'
-          : '<span class="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold text-xs">• Baby</span>';
-
-      card.innerHTML = `
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div class="space-y-1.5 min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-              <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">🦎 ${escapeHtml(gecko.name)}</h2>
-              <span class="px-2.5 py-0.5 rounded-md bg-brand-50 text-brand-700 text-xs font-bold border border-brand-200/70">
-                ${escapeHtml(gecko.morph)}
-              </span>
-              ${genderBadge}
-            </div>
-
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
-              <span>🎂 Tuổi: <strong class="text-slate-800">${escapeHtml(ageDisplay)}</strong></span>
-              <span>⏱️ Chu kỳ: <strong class="text-slate-800">${gecko.feedingIntervalDays} ngày/lần</strong></span>
-              <span>🕒 Giờ ăn: <strong class="text-slate-800">${escapeHtml(gecko.defaultFeedTime || '20:00')}</strong></span>
-            </div>
-
-            ${gecko.note ? `<p class="text-xs text-slate-500">📌 ${escapeHtml(gecko.note)}</p>` : ''}
-          </div>
-
-          <div class="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onclick="openProfileModal(true)"
-              class="min-h-[42px] px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
-            >
-              ✏️ Sửa hồ sơ
-            </button>
-            <button
-              type="button"
-              onclick="confirmDeleteGecko()"
-              class="min-h-[42px] px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition"
-            >
-              🗑️ Xóa bé
-            </button>
-          </div>
-        </div>
-      `;
-    }
-
-    function renderScheduleCard() {
-      const card = document.getElementById('schedule-notification-card');
-      const gecko = getActiveGecko();
-      if (!gecko) return;
-
-      const sched = getNextFeedingSchedule(gecko);
-      let badgeHtml = '';
-
-      if (!sched.hasHistory) {
-        badgeHtml = `<span class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">🍽️ Chưa có bữa ăn</span>`;
-      } else if (sched.daysDiff < 0) {
-        badgeHtml = `<span class="px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-xs font-extrabold">⚠️ Quá lịch ${Math.abs(sched.daysDiff)} ngày</span>`;
-      } else if (sched.daysDiff === 0) {
-        badgeHtml = `<span class="px-3 py-1 rounded-full bg-brand-600 text-white text-xs font-extrabold">🔥 Đến lịch hôm nay</span>`;
-      } else if (sched.daysDiff === 1) {
-        badgeHtml = `<span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">⏳ Còn 1 ngày (Ngày mai)</span>`;
-      } else {
-        badgeHtml = `<span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold">✅ Còn ${sched.daysDiff} ngày</span>`;
-      }
-
-      const notifActive = appState.notificationsEnabled && ('Notification' in window) && Notification.permission === 'granted';
-      const notifBtnClass = notifActive
-        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-        : 'bg-brand-600 hover:bg-brand-700 text-white';
-      const notifBtnLabel = notifActive
-        ? `🔔 Đang bật nhắc lúc ${sched.nextTime}`
-        : '🔔 Bật thông báo giờ cho ăn';
-
-      card.innerHTML = `
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Lịch cho ăn tiếp theo</span>
-            <div class="flex flex-wrap items-baseline gap-2 mt-0.5">
-              <p class="text-xl sm:text-2xl font-extrabold text-slate-900">
-                ${formatDateVN(sched.nextDate)} <span class="text-brand-600">• ${sched.nextTime}</span>
-              </p>
-            </div>
-            <p class="text-xs text-slate-500 mt-1">${escapeHtml(sched.lastFeedSummary)}</p>
-          </div>
-          <div class="self-start sm:self-center shrink-0">
-            ${badgeHtml}
-          </div>
-        </div>
-
-        <!-- Khu vực nút Thông báo điện thoại & Lịch -->
-        <div class="pt-3 border-t border-slate-100 space-y-2.5">
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <button
-              type="button"
-              onclick="toggleFeedingNotification()"
-              class="min-h-[46px] flex-1 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-xs transition flex items-center justify-center gap-2 ${notifBtnClass}"
-            >
-              <span>${notifBtnLabel}</span>
-            </button>
-
-            <div class="flex items-center gap-2">
-              <button
-                type="button"
-                onclick="sendTestNotification()"
-                class="min-h-[46px] flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition"
-              >
-                Thử thông báo
-              </button>
-
-              <button
-                type="button"
-                onclick="downloadCalendarICS()"
-                class="min-h-[46px] flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 font-bold text-xs transition"
-              >
-                📅 Thêm vào Lịch (.ics)
-              </button>
-            </div>
-          </div>
-
-          <p class="text-[11px] text-slate-500 leading-relaxed">
-            💡 <strong>Mẹo trên điện thoại:</strong> Trên iPhone (Safari), hãy bấm <em>Chia sẻ → Thêm vào màn hình chính</em> để nhận thông báo web; hoặc bấm <strong>Thêm vào Lịch (.ics)</strong> để điện thoại tự động đổ chuông báo thức ngay cả khi tắt trình duyệt.
-          </p>
-        </div>
-      `;
-    }
-
-    function renderKPICards() {
-      const grid = document.getElementById('kpi-grid');
-      const gecko = getActiveGecko();
-      if (!gecko) return;
-
-      const sortedLogs = [...(gecko.logs || [])].sort((a, b) =>
-        `${b.date} ${b.time || '00:00'}`.localeCompare(`${a.date} ${a.time || '00:00'}`)
-      );
-
-      // 1. Cân nặng hiện tại
-      const weightLogs = [...(gecko.logs || [])]
-        .filter(l => l.weight !== null && l.weight !== undefined && Number(l.weight) > 0)
-        .sort((a, b) => `${a.date} ${a.time || '00:00'}`.localeCompare(`${b.date} ${b.time || '00:00'}`));
-
-      let weightVal = '-- g';
-      let weightSub = 'Chưa nhập số cân';
-      if (weightLogs.length > 0) {
-        const latest = Number(weightLogs[weightLogs.length - 1].weight);
-        weightVal = `${latest.toFixed(1)} g`;
-        if (weightLogs.length >= 2) {
-          const prev = Number(weightLogs[weightLogs.length - 2].weight);
-          const diff = latest - prev;
-          const sign = diff >= 0 ? '+' : '';
-          weightSub = `${sign}${diff.toFixed(1)}g so với lần trước`;
-        } else {
-          weightSub = `Ngày ${formatShortDateVN(weightLogs[0].date)}`;
-        }
-      }
-
-      // 2. Tổng mồi 7 ngày qua
-      const sevenDaysAgo = addDaysToStr(getTodayStr(), -7);
-      let totalFeeders7d = 0;
-      let mealsCount7d = 0;
-      sortedLogs.forEach(l => {
-        if (l.date >= sevenDaysAgo) {
-          const mealTotal = (l.feeders || []).reduce((s, f) => s + Number(f.count || 0), 0);
-          if (mealTotal > 0) {
-            totalFeeders7d += mealTotal;
-            mealsCount7d += 1;
-          }
-        }
+      document.querySelectorAll('#suppChips .chip').forEach((c) => {
+        c.classList.toggle('selected', c.dataset.val === 'Không rắc');
       });
-
-      // 3. Lần đi phân gần nhất
-      const poopLog = sortedLogs.find(l => l.poop && l.poop !== 'Chưa đi phân');
-      const poopVal = poopLog ? poopLog.poop.split('(')[0].trim() : 'Chưa thấy';
-      const poopSub = poopLog ? `Ngày ${formatShortDateVN(poopLog.date)}` : 'Đang theo dõi';
-
-      // 4. Trạng thái gần nhất
-      const latestStatus = sortedLogs.length > 0 ? sortedLogs[0].status : 'Bình thường';
-      const shedLog = sortedLogs.find(l => (l.status || '').toLowerCase().includes('lột xác'));
-      const statusSub = shedLog ? `Lột gần nhất: ${formatShortDateVN(shedLog.date)}` : 'Chưa ghi nhận lột';
-
-      grid.innerHTML = `
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-          <p class="text-[11px] font-bold text-slate-400 uppercase">Cân nặng hiện tại</p>
-          <p class="text-lg font-extrabold text-brand-600 mt-0.5">${weightVal}</p>
-          <p class="text-[11px] text-slate-500 mt-0.5 truncate">${weightSub}</p>
-        </div>
-
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-          <p class="text-[11px] font-bold text-slate-400 uppercase">Tổng mồi 7 ngày qua</p>
-          <p class="text-lg font-extrabold text-emerald-600 mt-0.5">${totalFeeders7d} con</p>
-          <p class="text-[11px] text-slate-500 mt-0.5 truncate">Trong ${mealsCount7d} bữa ăn</p>
-        </div>
-
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-          <p class="text-[11px] font-bold text-slate-400 uppercase">Đi phân gần nhất</p>
-          <p class="text-sm sm:text-base font-extrabold text-sky-700 mt-1 truncate">${escapeHtml(poopVal)}</p>
-          <p class="text-[11px] text-slate-500 mt-0.5 truncate">${poopSub}</p>
-        </div>
-
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-          <p class="text-[11px] font-bold text-slate-400 uppercase">Trạng thái gần nhất</p>
-          <p class="text-sm sm:text-base font-extrabold text-purple-700 mt-1 truncate">${escapeHtml(latestStatus)}</p>
-          <p class="text-[11px] text-slate-500 mt-0.5 truncate">${statusSub}</p>
-        </div>
-      `;
-    }
-
-    function renderLogsList() {
-      const container = document.getElementById('logs-list-container');
-      const gecko = getActiveGecko();
-      if (!gecko || !gecko.logs || gecko.logs.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-8 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-2">
-            <p class="text-sm font-medium text-slate-500">Chưa có bản ghi nhật ký nào cho bé ${escapeHtml(gecko ? gecko.name : '')}.</p>
-            <button type="button" onclick="switchTab('log')" class="min-h-[40px] px-4 py-2 rounded-xl bg-brand-50 text-brand-700 text-xs font-bold hover:bg-brand-100 transition">
-              + Ghi nhật ký đầu tiên
-            </button>
-          </div>
-        `;
-        return;
-      }
-
-      const sortedLogs = [...gecko.logs].sort((a, b) =>
-        `${b.date} ${b.time || '00:00'}`.localeCompare(`${a.date} ${a.time || '00:00'}`)
-      );
-
-      container.innerHTML = sortedLogs
-        .map(log => {
-          const feederSummary = formatFeedersSummary(log.feeders);
-          const hasFood = feederSummary !== 'Không cho ăn';
-          const foodBadge = hasFood
-            ? `<span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-xs">🍽️ ${escapeHtml(feederSummary)}</span>`
-            : `<span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-semibold text-xs">⏸️ Không cho ăn</span>`;
-
-          // Huy hiệu bổ sung dinh dưỡng (mảng các mục đã đánh dấu)
-          const supps = Array.isArray(log.supplements) && log.supplements.length > 0 ? log.supplements : ['Không rắc'];
-          const suppBadgesHtml = supps
-            .map(s => {
-              if (s === 'Canxi') {
-                return `<span class="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-800 border border-sky-200/70 font-bold text-xs">🦴 Canxi</span>`;
-              }
-              if (s === 'Multi vitamin D3') {
-                return `<span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200/70 font-bold text-xs">💊 Multi vitamin D3</span>`;
-              }
-              return `<span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-medium text-xs">⚪ Không rắc</span>`;
-            })
-            .join('');
-
-          const weightBadge =
-            log.weight && Number(log.weight) > 0
-              ? `<span class="px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 font-bold text-xs">⚖️ ${Number(log.weight).toFixed(1)}g</span>`
-              : '';
-
-          const poopColor = (log.poop || '').includes('Chuẩn')
-            ? 'text-sky-700 bg-sky-50'
-            : (log.poop || '').includes('Bất thường') || (log.poop || '').includes('lỏng')
-            ? 'text-rose-700 bg-rose-50'
-            : 'text-slate-600 bg-slate-100';
-
-          const timeDisplay = log.time ? ` • ${escapeHtml(log.time)}` : '';
-
-          return `
-            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white transition flex items-start justify-between gap-2.5">
-              <div class="space-y-2 min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-1.5">
-                  <span class="text-xs font-extrabold text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                    📅 ${formatDateVN(log.date)}${timeDisplay}
-                  </span>
-                  ${foodBadge}
-                  ${weightBadge}
-                </div>
-
-                <div class="flex flex-wrap items-center gap-1.5">
-                  ${suppBadgesHtml}
-                  <span class="px-2 py-1 rounded-lg text-xs font-medium ${poopColor}">Phân: ${escapeHtml(log.poop || 'Chưa đi phân')}</span>
-                  <span class="px-2 py-1 rounded-lg bg-purple-50 text-purple-700 text-xs font-medium">${escapeHtml(log.status || 'Bình thường')}</span>
-                </div>
-
-                ${
-                  log.notes
-                    ? `<p class="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 leading-relaxed">💬 ${escapeHtml(log.notes)}</p>`
-                    : ''
-                }
-              </div>
-
-              <button
-                type="button"
-                onclick="confirmDeleteLog('${log.id}')"
-                class="min-w-[40px] min-h-[40px] rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition shrink-0"
-                title="Xóa bản ghi"
-              >
-                🗑️
-              </button>
-            </div>
-          `;
-        })
-        .join('');
-    }
-
-    // ==================== FORM GHI NHẬT KÝ & NHIỀU LOẠI MỒI ====================
-    function prepareLogForm() {
-      const gecko = getActiveGecko();
-      if (!gecko) return;
-
-      document.getElementById('form-gecko-name').textContent = gecko.name;
-      if (!document.getElementById('log-date').value) {
-        document.getElementById('log-date').value = getTodayStr();
-      }
-      if (!document.getElementById('log-time').value) {
-        document.getElementById('log-time').value = getCurrentTimeStr();
-      }
-      document.getElementById('quick-weight-date').value = getTodayStr();
-
-      if (feederRows.length === 0) {
-        feederRows = [{ id: 'fr_' + Date.now(), type: 'Gián Dubia', count: 2 }];
-        renderFeederRows();
-      }
-      updateSupplementCheckboxVisuals();
-    }
-
-    function setFormNow() {
-      document.getElementById('log-date').value = getTodayStr();
-      document.getElementById('log-time').value = getCurrentTimeStr();
-      showToast('Đã cập nhật ngày và giờ hiện tại', 'info');
-    }
-
-    function renderFeederRows() {
-      const container = document.getElementById('feeder-rows-container');
-      container.innerHTML = feederRows
-        .map((row, index) => {
-          const optionsHtml = FEEDER_OPTIONS.map(
-            opt => `<option value="${escapeHtml(opt)}" ${row.type === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`
-          ).join('');
-
-          const removeBtnHtml =
-            feederRows.length > 1
-              ? `<button
-                  type="button"
-                  onclick="removeFeederRow('${row.id}')"
-                  class="min-w-[44px] h-[46px] rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-extrabold text-base flex items-center justify-center shrink-0 transition"
-                  title="Xóa loại mồi này"
-                >×</button>`
-              : '';
-
-          return `
-            <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200/80">
-              <select
-                onchange="updateFeederRowType('${row.id}', this.value)"
-                aria-label="Loại mồi ${index + 1}"
-                class="flex-1 min-w-0 min-h-[46px] px-3 py-2 rounded-xl border border-slate-300 bg-white focus:border-brand-500 outline-none text-sm font-medium"
-              >
-                ${optionsHtml}
-              </select>
-
-              <div class="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onclick="stepFeederRowCount('${row.id}', -1)"
-                  class="w-11 h-[46px] rounded-xl bg-white border border-slate-300 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-bold text-lg flex items-center justify-center"
-                >−</button>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value="${row.count}"
-                  onchange="setFeederRowCount('${row.id}', this.value)"
-                  class="w-12 h-[46px] text-center font-extrabold text-sm rounded-xl border border-slate-300 bg-white focus:border-brand-500 outline-none"
-                />
-                <button
-                  type="button"
-                  onclick="stepFeederRowCount('${row.id}', 1)"
-                  class="w-11 h-[46px] rounded-xl bg-brand-100 hover:bg-brand-200 active:bg-brand-300 text-brand-800 font-bold text-lg flex items-center justify-center"
-                >+</button>
-              </div>
-
-              ${removeBtnHtml}
-            </div>
-          `;
-        })
-        .join('');
     }
 
     function addFeederRow(defaultType = 'Dế', defaultCount = 1) {
-      feederRows.push({
-        id: 'fr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-        type: defaultType,
-        count: defaultCount
-      });
-      renderFeederRows();
+      const list = document.getElementById('feederList');
+      const row = document.createElement('div');
+      row.className = 'feeder-row';
+      row.innerHTML = `
+        <select class="f-type">
+          <option value="Gián Dubia" ${defaultType === 'Gián Dubia' ? 'selected' : ''}>Gián Dubia</option>
+          <option value="Dế" ${defaultType === 'Dế' ? 'selected' : ''}>Dế</option>
+          <option value="Sâu quy (Mealworm)" ${defaultType === 'Sâu quy (Mealworm)' ? 'selected' : ''}>Sâu quy (Mealworm)</option>
+          <option value="Sâu Superworm" ${defaultType === 'Sâu Superworm' ? 'selected' : ''}>Sâu Superworm</option>
+          <option value="Không cho ăn" ${defaultType === 'Không cho ăn' ? 'selected' : ''}>Không cho ăn</option>
+        </select>
+        <div class="qty-box">
+          <button type="button" class="qty-btn" onclick="stepQty(this, -1)">−</button>
+          <input type="number" class="qty-input f-count" min="0" max="50" value="${defaultCount}">
+          <button type="button" class="qty-btn" onclick="stepQty(this, 1)">+</button>
+        </div>
+        <button type="button" class="btn-del-row" title="Xóa dòng" onclick="removeFeederRow(this)">✕</button>
+      `;
+      list.appendChild(row);
     }
 
-    function removeFeederRow(rowId) {
-      if (feederRows.length <= 1) return;
-      feederRows = feederRows.filter(r => r.id !== rowId);
-      renderFeederRows();
+    function stepQty(btn, delta) {
+      const inp = btn.parentElement.querySelector('.f-count');
+      inp.value = Math.max(0, (parseInt(inp.value, 10) || 0) + delta);
     }
 
-    function updateFeederRowType(rowId, newType) {
-      const row = feederRows.find(r => r.id === rowId);
-      if (row) row.type = newType;
-    }
-
-    function stepFeederRowCount(rowId, delta) {
-      const row = feederRows.find(r => r.id === rowId);
-      if (!row) return;
-      row.count = Math.max(0, Number(row.count || 0) + delta);
-      renderFeederRows();
-    }
-
-    function setFeederRowCount(rowId, rawVal) {
-      const row = feederRows.find(r => r.id === rowId);
-      if (!row) return;
-      row.count = Math.max(0, parseInt(rawVal || '0', 10) || 0);
-    }
-
-    // Logic đánh dấu thủ công Bổ sung dinh dưỡng
-    function handleSupplementToggle(source) {
-      const cbCanxi = document.getElementById('supp-canxi');
-      const cbMulti = document.getElementById('supp-multid3');
-      const cbNone = document.getElementById('supp-none');
-
-      if (source === 'none' && cbNone.checked) {
-        cbCanxi.checked = false;
-        cbMulti.checked = false;
-      } else if ((source === 'canxi' || source === 'multid3') && (cbCanxi.checked || cbMulti.checked)) {
-        cbNone.checked = false;
-      } else if (!cbCanxi.checked && !cbMulti.checked && !cbNone.checked) {
-        cbNone.checked = true;
+    function removeFeederRow(btn) {
+      const list = document.getElementById('feederList');
+      if (list.children.length > 1) {
+        btn.parentElement.remove();
+      } else {
+        btn.parentElement.querySelector('.f-count').value = 0;
       }
-
-      updateSupplementCheckboxVisuals();
     }
 
-    function updateSupplementCheckboxVisuals() {
-      const pairs = [
-        { id: 'supp-canxi', label: 'Canxi' },
-        { id: 'supp-multid3', label: 'Multi vitamin D3' },
-        { id: 'supp-none', label: 'Không rắc' }
-      ];
-      pairs.forEach(p => {
-        const input = document.getElementById(p.id);
-        const iconSpan = input.parentElement.querySelector('.supp-check-icon');
-        if (iconSpan) {
-          iconSpan.textContent = input.checked ? '✓' : '';
+    function toggleSupp(btn) {
+      const val = btn.dataset.val;
+      const chips = document.querySelectorAll('#suppChips .chip');
+      if (val === 'Không rắc') {
+        chips.forEach((c) => c.classList.remove('selected'));
+        btn.classList.add('selected');
+      } else {
+        document.querySelector('#suppChips .chip[data-val="Không rắc"]').classList.remove('selected');
+        btn.classList.toggle('selected');
+        const anySelected = [...chips].some((c) => c.classList.contains('selected'));
+        if (!anySelected) {
+          document.querySelector('#suppChips .chip[data-val="Không rắc"]').classList.add('selected');
+        }
+      }
+    }
+
+    function saveLog() {
+      const pet = getActivePet();
+      if (!pet) return;
+
+      const date = document.getElementById('logDate').value || todayISO();
+      const time = document.getElementById('logTime').value || '19:00';
+      const weightRaw = document.getElementById('logWeight').value.trim();
+      const weight = weightRaw ? parseFloat(weightRaw) : null;
+
+      const feeders = [];
+      document.querySelectorAll('#feederList .feeder-row').forEach((row) => {
+        const type = row.querySelector('.f-type').value;
+        const count = Math.max(0, parseInt(row.querySelector('.f-count').value, 10) || 0);
+        if (type !== 'Không cho ăn' && count > 0) {
+          feeders.push({ type, count });
         }
       });
-    }
 
-    function getSelectedSupplements() {
-      const list = [];
-      if (document.getElementById('supp-canxi').checked) list.push('Canxi');
-      if (document.getElementById('supp-multid3').checked) list.push('Multi vitamin D3');
-      if (list.length === 0 || document.getElementById('supp-none').checked) {
-        return ['Không rắc'];
-      }
-      return list;
-    }
+      const supplements = [...document.querySelectorAll('#suppChips .chip.selected')].map((c) => c.dataset.val);
 
-    function handleSaveLog(event) {
-      event.preventDefault();
-      const gecko = getActiveGecko();
-      if (!gecko) return;
-
-      const date = document.getElementById('log-date').value;
-      const time = document.getElementById('log-time').value || getCurrentTimeStr();
-      const weightRaw = document.getElementById('log-weight').value.trim();
-      const weightVal = weightRaw !== '' ? parseFloat(weightRaw) : null;
-      const poop = document.getElementById('log-poop').value;
-      const status = document.getElementById('log-status').value;
-      const notes = document.getElementById('log-notes').value.trim();
-
-      // Gom các loại mồi trùng tên (nếu người dùng chọn cùng 1 loại ở 2 dòng) và lọc count > 0
-      const mergedMap = new Map();
-      feederRows.forEach(r => {
-        const cnt = Math.max(0, parseInt(r.count || '0', 10));
-        if (cnt > 0) {
-          mergedMap.set(r.type, (mergedMap.get(r.type) || 0) + cnt);
-        }
-      });
-      const feeders = Array.from(mergedMap.entries()).map(([type, count]) => ({ type, count }));
-      const supplements = getSelectedSupplements();
-
-      const newLog = {
+      const newEntry = {
         id: 'log_' + Date.now(),
         date,
         time,
         feeders,
-        supplements,
-        weight: weightVal && weightVal > 0 ? weightVal : null,
-        poop,
-        status,
-        notes
+        supplements: supplements.length ? supplements : ['Không rắc'],
+        weight: weight && weight > 0 ? weight : null,
+        poop: document.getElementById('logPoop').value,
+        status: document.getElementById('logStatus').value,
+        notes: document.getElementById('logNotes').value.trim()
       };
 
-      gecko.logs = gecko.logs || [];
-      gecko.logs.push(newLog);
+      pet.logs = pet.logs || [];
+      pet.logs.push(newEntry);
       saveState();
-
-      // Reset form về trạng thái sẵn sàng cho lần nhập sau
-      document.getElementById('log-weight').value = '';
-      document.getElementById('log-notes').value = '';
-      feederRows = [{ id: 'fr_' + Date.now(), type: 'Gián Dubia', count: 2 }];
-      renderFeederRows();
-
-      document.getElementById('supp-canxi').checked = false;
-      document.getElementById('supp-multid3').checked = false;
-      document.getElementById('supp-none').checked = true;
-      updateSupplementCheckboxVisuals();
-
-      showToast(`Đã lưu nhật ký cho bé ${gecko.name}!`);
+      renderAll();
       switchTab('overview');
-      renderAll();
+      showToast('Đã lưu nhật ký cho ' + pet.name + '!', 'ok');
     }
 
-    function confirmDeleteLog(logId) {
-      openConfirmModal('Xóa bản ghi nhật ký', 'Bạn có chắc muốn xóa bản ghi này không?', () => {
-        const gecko = getActiveGecko();
-        if (!gecko) return;
-        gecko.logs = gecko.logs.filter(l => l.id !== logId);
-        saveState();
-        renderAll();
-        showToast('Đã xóa bản ghi nhật ký', 'info');
-      });
-    }
-
-    // ==================== CÂN NẶNG & BIỂU ĐỒ ĐƯỜNG SVG ====================
-    function handleQuickWeightSave(event) {
-      event.preventDefault();
-      const gecko = getActiveGecko();
-      if (!gecko) return;
-
-      const date = document.getElementById('quick-weight-date').value;
-      const val = parseFloat(document.getElementById('quick-weight-val').value);
-      if (!date || isNaN(val) || val <= 0) {
-        showToast('Vui lòng nhập cân nặng hợp lệ.', 'error');
-        return;
-      }
-
-      const existing = (gecko.logs || []).find(l => l.date === date);
-      if (existing) {
-        existing.weight = val;
-      } else {
-        gecko.logs.push({
-          id: 'log_' + Date.now(),
-          date,
-          time: getCurrentTimeStr(),
-          feeders: [],
-          supplements: ['Không rắc'],
-          weight: val,
-          poop: 'Chưa đi phân',
-          status: 'Bình thường',
-          notes: 'Cập nhật cân nặng'
-        });
-      }
-
+    function deleteLog(logId) {
+      const pet = getActivePet();
+      if (!pet) return;
+      if (!confirm('Xóa bản ghi nhật ký này?')) return;
+      pet.logs = (pet.logs || []).filter((l) => l.id !== logId);
       saveState();
-      document.getElementById('quick-weight-val').value = '';
       renderAll();
-      showToast(`Đã lưu cân nặng ${val.toFixed(1)}g cho ${gecko.name}!`);
+      showToast('Đã xóa bản ghi');
     }
 
-    function renderWeightHistoryList() {
-      const listEl = document.getElementById('weight-history-list');
-      const badgeEl = document.getElementById('chart-growth-badge');
-      const gecko = getActiveGecko();
-      if (!gecko) return;
+    function renderLogItemHTML(log) {
+      const foodText = log.feeders && log.feeders.length
+        ? log.feeders.map((f) => `${f.count} ${f.type}`).join(' + ')
+        : 'Nhịn ăn (0 mồi)';
+      const suppText = (log.supplements || []).join(', ');
+      const weightBadge = log.weight ? ` • ⚖️ <b>${log.weight}g</b>` : '';
+      const noteLine = log.notes ? `<div class="log-sub" style="color:#0F172A;margin-top:2px;">📝 ${escapeHTML(log.notes)}</div>` : '';
 
-      const points = [...(gecko.logs || [])]
-        .filter(l => l.weight !== null && l.weight !== undefined && Number(l.weight) > 0)
-        .sort((a, b) => `${a.date} ${a.time || '00:00'}`.localeCompare(`${b.date} ${b.time || '00:00'}`));
+      return `
+        <div class="log-item">
+          <div>
+            <div class="log-date">${formatVNDate(log.date)} • ${log.time || ''}</div>
+            <div class="log-main">${escapeHTML(foodText)}${weightBadge}</div>
+            <div class="log-sub">💊 ${escapeHTML(suppText)} &nbsp;|&nbsp; 💩 ${escapeHTML(log.poop)}</div>
+            <div class="log-sub">🦎 ${escapeHTML(log.status)}</div>
+            ${noteLine}
+          </div>
+          <button class="btn-del-row" onclick="deleteLog('${log.id}')" title="Xóa">🗑️</button>
+        </div>
+      `;
+    }
 
-      if (points.length === 0) {
-        badgeEl.textContent = 'Chưa có dữ liệu';
-        listEl.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Hãy nhập số cân (gram) để vẽ biểu đồ tăng trưởng.</p>`;
+    function escapeHTML(str) {
+      return String(str || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    // Biểu đồ đường cân nặng SVG
+    function renderWeightChart() {
+      const pet = getActivePet();
+      const box = document.getElementById('chartContainer');
+      const tip = document.getElementById('chartTip');
+      if (!pet) return;
+
+      const points = [...(pet.logs || [])]
+        .filter((l) => typeof l.weight === 'number' && l.weight > 0)
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-12);
+
+      if (!points.length) {
+        box.innerHTML = '<div style="text-align:center;padding:34px 12px;color:var(--muted);font-size:13px;">Chưa có dữ liệu cân nặng. Hãy nhập cân nặng trong mục <b>Ghi nhật ký</b> để vẽ biểu đồ.</div>';
+        tip.textContent = '';
         return;
       }
 
-      const firstW = Number(points[0].weight);
-      const lastW = Number(points[points.length - 1].weight);
-      const totalGain = lastW - firstW;
-      const sign = totalGain >= 0 ? '+' : '';
-      badgeEl.textContent = points.length >= 2 ? `Tăng trưởng: ${sign}${totalGain.toFixed(1)}g` : `Hiện tại: ${lastW.toFixed(1)}g`;
-
-      const reversed = [...points].reverse();
-      listEl.innerHTML = reversed
-        .map((p, idx) => {
-          const prev = reversed[idx + 1];
-          let deltaHtml = `<span class="text-xs text-slate-400">Mốc đầu</span>`;
-          if (prev) {
-            const diff = Number(p.weight) - Number(prev.weight);
-            const dSign = diff >= 0 ? '+' : '';
-            const color = diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-rose-600' : 'text-slate-500';
-            deltaHtml = `<span class="text-xs font-bold ${color}">${dSign}${diff.toFixed(1)}g</span>`;
-          }
-          return `
-            <div class="py-2.5 flex items-center justify-between text-sm">
-              <div class="flex items-center gap-3">
-                <span class="text-xs font-semibold text-slate-500">${formatDateVN(p.date)}</span>
-                <span class="font-extrabold text-slate-900">${Number(p.weight).toFixed(1)} g</span>
-              </div>
-              <div>${deltaHtml}</div>
-            </div>
-          `;
-        })
-        .join('');
-    }
-
-    function drawWeightSVGChart() {
-      const svg = document.getElementById('weight-svg-chart');
-      const tooltip = document.getElementById('svg-tooltip');
-      if (!svg) return;
-      tooltip.classList.add('hidden');
-
-      const gecko = getActiveGecko();
-      if (!gecko) return;
-
-      const points = [...(gecko.logs || [])]
-        .filter(l => l.weight !== null && l.weight !== undefined && Number(l.weight) > 0)
-        .sort((a, b) => `${a.date} ${a.time || '00:00'}`.localeCompare(`${b.date} ${b.time || '00:00'}`));
-
-      const W = 640;
-      const H = 260;
-
-      if (points.length === 0) {
-        svg.innerHTML = `
-          <text x="${W / 2}" y="${H / 2}" text-anchor="middle" fill="#94A3B8" font-size="14" font-weight="500">
-            Chưa có dữ liệu cân nặng để vẽ biểu đồ
-          </text>
-        `;
-        return;
-      }
-
-      const padL = 52;
-      const padR = 28;
-      const padT = 32;
-      const padB = 36;
+      const W = 560, H = 220, padL = 44, padR = 24, padT = 26, padB = 34;
       const plotW = W - padL - padR;
       const plotH = H - padT - padB;
-
-      const values = points.map(p => Number(p.weight));
-      let minV = Math.min(...values);
-      let maxV = Math.max(...values);
-
+      const vals = points.map((p) => p.weight);
+      let minV = Math.min(...vals);
+      let maxV = Math.max(...vals);
       if (minV === maxV) {
-        minV = Math.max(0, minV - 2);
-        maxV = maxV + 2;
+        minV = Math.max(0, minV - 1);
+        maxV = maxV + 1;
       } else {
         const margin = (maxV - minV) * 0.2;
         minV = Math.max(0, minV - margin);
         maxV = maxV + margin;
       }
 
-      let svgParts = [];
-
-      // Gradient fill definition
-      svgParts.push(`
-        <defs>
-          <linearGradient id="weightAreaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#EA580C" stop-opacity="0.24" />
-            <stop offset="100%" stop-color="#EA580C" stop-opacity="0.0" />
-          </linearGradient>
-        </defs>
-      `);
-
-      // Đường lưới ngang & nhãn trục Y
-      const steps = 4;
-      for (let i = 0; i <= steps; i++) {
-        const ratio = i / steps;
-        const y = padT + plotH - ratio * plotH;
-        const labelVal = minV + ratio * (maxV - minV);
-        svgParts.push(`
-          <line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="4 4" />
-          <text x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="#64748B" font-size="11" font-weight="600">${labelVal.toFixed(1)}g</text>
-        `);
+      let gridSVG = '';
+      for (let i = 0; i <= 2; i++) {
+        const y = padT + (plotH * i) / 2;
+        const val = (maxV - ((maxV - minV) * i) / 2).toFixed(1);
+        gridSVG += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#E2E8F0" stroke-dasharray="3 3"/>`;
+        gridSVG += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="11" fill="#64748B">${val}</text>`;
       }
 
-      const n = points.length;
       const coords = points.map((p, idx) => {
-        const x = n === 1 ? padL + plotW / 2 : padL + (plotW * idx) / (n - 1);
-        const yRatio = (Number(p.weight) - minV) / (maxV - minV);
-        const y = padT + plotH - yRatio * plotH;
-        const prevWeight = idx > 0 ? Number(points[idx - 1].weight) : null;
-        return { x, y, weight: Number(p.weight), date: p.date, prevWeight };
+        const x = padL + (points.length === 1 ? plotW / 2 : (plotW * idx) / (points.length - 1));
+        const y = padT + plotH - ((p.weight - minV) / (maxV - minV)) * plotH;
+        return { x, y, p };
       });
 
-      // Vùng tô bóng & đường nối
-      if (coords.length >= 2) {
-        const polyPoints = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
-        const areaPath = `M ${coords[0].x.toFixed(1)},${(padT + plotH).toFixed(1)} L ${coords
-          .map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`)
-          .join(' L ')} L ${coords[coords.length - 1].x.toFixed(1)},${(padT + plotH).toFixed(1)} Z`;
-
-        svgParts.push(`<path d="${areaPath}" fill="url(#weightAreaGrad)" />`);
-        svgParts.push(
-          `<polyline fill="none" stroke="#EA580C" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" points="${polyPoints}" />`
-        );
-      }
-
-      // Các điểm dữ liệu & nhãn
-      const labelStep = Math.ceil(n / 6);
+      const polyline = coords.map((c) => `${c.x},${c.y}`).join(' ');
+      let dotsSVG = '';
       coords.forEach((c, idx) => {
-        const showLabel = idx % labelStep === 0 || idx === n - 1;
-        if (showLabel) {
-          svgParts.push(`
-            <text x="${c.x.toFixed(1)}" y="${(c.y - 12).toFixed(1)}" text-anchor="middle" fill="#0F172A" font-size="11" font-weight="700">${c.weight.toFixed(1)}g</text>
-            <text x="${c.x.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#64748B" font-size="11" font-weight="500">${formatShortDateVN(c.date)}</text>
-          `);
-        }
-
-        const diffStr =
-          c.prevWeight !== null
-            ? ` (${c.weight - c.prevWeight >= 0 ? '+' : ''}${(c.weight - c.prevWeight).toFixed(1)}g)`
-            : '';
-
-        // Vùng chạm vô hình lớn (r=18) để dễ bấm trên điện thoại + điểm hiển thị (r=5.5)
-        svgParts.push(`
-          <g class="cursor-pointer"
-             onmouseenter="showSvgTooltip(event, '${formatDateVN(c.date)}', '${c.weight.toFixed(1)}g${diffStr}', ${c.x}, ${c.y})"
-             ontouchstart="showSvgTooltip(event, '${formatDateVN(c.date)}', '${c.weight.toFixed(1)}g${diffStr}', ${c.x}, ${c.y})">
-            <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="18" fill="transparent" />
-            <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="5.5" fill="#EA580C" stroke="#FFFFFF" stroke-width="2" />
+        const shortDate = c.p.date.slice(5).split('-').reverse().join('/');
+        dotsSVG += `
+          <g style="cursor:pointer" onclick="showWeightPoint(${idx})">
+            <circle cx="${c.x}" cy="${c.y}" r="14" fill="transparent"/>
+            <circle cx="${c.x}" cy="${c.y}" r="5.5" fill="#EA580C" stroke="#FFFFFF" stroke-width="2"/>
+            <text x="${c.x}" y="${c.y - 11}" text-anchor="middle" font-size="11" font-weight="700" fill="#0F172A">${c.p.weight}g</text>
+            <text x="${c.x}" y="${H - 10}" text-anchor="middle" font-size="10" fill="#64748B">${shortDate}</text>
           </g>
-        `);
+        `;
       });
 
-      svg.innerHTML = svgParts.join('');
-    }
-
-    function showSvgTooltip(event, dateLabel, weightLabel, svgX, svgY) {
-      const container = document.getElementById('svg-chart-container');
-      const tooltip = document.getElementById('svg-tooltip');
-      const rect = container.getBoundingClientRect();
-
-      tooltip.innerHTML = `<strong>${dateLabel}</strong>: ${weightLabel}`;
-      tooltip.classList.remove('hidden');
-
-      const px = (svgX / 640) * rect.width;
-      const py = (svgY / 260) * rect.height;
-
-      const leftPos = Math.min(Math.max(8, px - 55), rect.width - 145);
-      const topPos = Math.max(8, py - 40);
-
-      tooltip.style.left = `${leftPos}px`;
-      tooltip.style.top = `${topPos}px`;
-    }
-
-    // ==================== QUẢN LÝ HỒ SƠ BÉ ====================
-    function openProfileModal(isEdit = false) {
-      const modal = document.getElementById('profile-modal');
-      const title = document.getElementById('profile-modal-title');
-      const gecko = isEdit ? getActiveGecko() : null;
-
-      if (isEdit && !gecko) return;
-
-      if (isEdit && gecko) {
-        title.textContent = `Sửa hồ sơ: ${gecko.name}`;
-        document.getElementById('prof-id').value = gecko.id;
-        document.getElementById('prof-name').value = gecko.name;
-        document.getElementById('prof-gender').value = gecko.gender || 'Chưa rõ (Baby)';
-        document.getElementById('prof-morph').value = gecko.morph || '';
-        document.getElementById('prof-hatch-date').value = gecko.hatchDate || '';
-        document.getElementById('prof-age-text').value = gecko.ageText || '';
-        document.getElementById('prof-interval').value = String(gecko.feedingIntervalDays || 2);
-        document.getElementById('prof-feed-time').value = gecko.defaultFeedTime || '20:00';
-        document.getElementById('prof-note').value = gecko.note || '';
-      } else {
-        title.textContent = 'Thêm hồ sơ Gecko mới';
-        document.getElementById('profile-form').reset();
-        document.getElementById('prof-id').value = '';
-        document.getElementById('prof-interval').value = '2';
-        document.getElementById('prof-feed-time').value = '20:00';
-      }
-
-      modal.classList.remove('hidden');
-    }
-
-    function closeProfileModal() {
-      document.getElementById('profile-modal').classList.add('hidden');
-    }
-
-    function setMorphPreset(val) {
-      document.getElementById('prof-morph').value = val;
-    }
-
-    function handleSaveProfile(event) {
-      event.preventDefault();
-      const id = document.getElementById('prof-id').value;
-      const name = document.getElementById('prof-name').value.trim();
-      const gender = document.getElementById('prof-gender').value;
-      const morph = document.getElementById('prof-morph').value.trim();
-      const hatchDate = document.getElementById('prof-hatch-date').value;
-      const ageText = document.getElementById('prof-age-text').value.trim();
-      const feedingIntervalDays = Math.max(1, parseInt(document.getElementById('prof-interval').value || '2', 10));
-      const defaultFeedTime = document.getElementById('prof-feed-time').value || '20:00';
-      const note = document.getElementById('prof-note').value.trim();
-
-      if (!name || !morph) {
-        showToast('Vui lòng nhập Tên bé và Morph.', 'error');
-        return;
-      }
-
-      if (id) {
-        const existing = appState.geckos.find(g => g.id === id);
-        if (existing) {
-          existing.name = name;
-          existing.gender = gender;
-          existing.morph = morph;
-          existing.hatchDate = hatchDate;
-          existing.ageText = ageText;
-          existing.feedingIntervalDays = feedingIntervalDays;
-          existing.defaultFeedTime = defaultFeedTime;
-          existing.note = note;
-        }
-        showToast(`Đã cập nhật hồ sơ bé ${name}!`);
-      } else {
-        const newGecko = {
-          id: 'gecko_' + Date.now(),
-          name,
-          gender,
-          morph,
-          hatchDate,
-          ageText,
-          feedingIntervalDays,
-          defaultFeedTime,
-          note,
-          logs: []
-        };
-        appState.geckos.push(newGecko);
-        appState.activeGeckoId = newGecko.id;
-        feederRows = [{ id: 'fr_' + Date.now(), type: 'Gián Dubia', count: 2 }];
-        showToast(`Đã tạo hồ sơ bé ${name}!`);
-      }
-
-      saveState();
-      closeProfileModal();
-      renderAll();
-    }
-
-    function selectGecko(geckoId) {
-      appState.activeGeckoId = geckoId;
-      feederRows = [{ id: 'fr_' + Date.now(), type: 'Gián Dubia', count: 2 }];
-      saveState();
-      renderAll();
-    }
-
-    function confirmDeleteGecko() {
-      const gecko = getActiveGecko();
-      if (!gecko) return;
-
-      openConfirmModal(
-        `Xóa hồ sơ bé "${gecko.name}"?`,
-        'Toàn bộ nhật ký ăn uống và cân nặng của bé này sẽ bị xóa vĩnh viễn.',
-        () => {
-          appState.geckos = appState.geckos.filter(g => g.id !== gecko.id);
-          appState.activeGeckoId = appState.geckos.length > 0 ? appState.geckos[0].id : null;
-          saveState();
-          renderAll();
-          showToast(`Đã xóa hồ sơ bé ${gecko.name}`, 'info');
-        }
-      );
-    }
-
-    // ==================== CHUYỂN TAB ====================
-    function switchTab(tabName) {
-      currentTab = tabName;
-      ['overview', 'log', 'weight', 'backup'].forEach(t => {
-        const panel = document.getElementById(`tab-${t}`);
-        if (panel) panel.classList.toggle('hidden', t !== tabName);
-      });
-
-      document.querySelectorAll('.nav-btn-desktop').forEach(btn => {
-        const active = btn.dataset.tab === tabName;
-        btn.className = active
-          ? 'nav-btn-desktop min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold bg-white text-brand-600 shadow-xs transition'
-          : 'nav-btn-desktop min-h-[44px] py-2 px-4 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-900 transition';
-      });
-
-      document.querySelectorAll('.nav-btn-mobile').forEach(btn => {
-        const active = btn.dataset.tab === tabName;
-        btn.className = active
-          ? 'nav-btn-mobile min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-bold bg-brand-50 text-brand-600 transition'
-          : 'nav-btn-mobile min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-medium text-slate-500 hover:text-slate-800 transition';
-      });
-
-      if (tabName === 'weight') {
-        drawWeightSVGChart();
-      } else if (tabName === 'log') {
-        prepareLogForm();
-      } else if (tabName === 'backup') {
-        renderBackupStats();
-      }
-    }
-
-    // ==================== SAO LƯU & KHÔI PHỤC (JSON / CSV) ====================
-    function renderBackupStats() {
-      const box = document.getElementById('backup-stats-box');
-      if (!box) return;
-      const totalGeckos = appState.geckos.length;
-      const totalLogs = appState.geckos.reduce((acc, g) => acc + (g.logs ? g.logs.length : 0), 0);
-      const rawSize = new Blob([localStorage.getItem(STORAGE_KEY) || '']).size;
-      const kbSize = (rawSize / 1024).toFixed(1);
-
+      window._chartCoords = coords;
       box.innerHTML = `
-        <div>
-          <p class="text-[11px] font-bold text-slate-400 uppercase">Số lượng bé</p>
-          <p class="text-lg font-extrabold text-slate-900">${totalGeckos} bé</p>
-        </div>
-        <div>
-          <p class="text-[11px] font-bold text-slate-400 uppercase">Tổng bản ghi</p>
-          <p class="text-lg font-extrabold text-brand-600">${totalLogs} nhật ký</p>
-        </div>
-        <div class="col-span-2 sm:col-span-1">
-          <p class="text-[11px] font-bold text-slate-400 uppercase">Bộ nhớ đã dùng</p>
-          <p class="text-lg font-extrabold text-slate-700">${kbSize} KB</p>
-        </div>
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">
+          ${gridSVG}
+          ${coords.length > 1 ? `<polyline fill="none" stroke="#EA580C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${polyline}"/>` : ''}
+          ${dotsSVG}
+        </svg>
       `;
+      showWeightPoint(coords.length - 1);
     }
 
-    function exportJSON() {
-      try {
-        const payload = {
-          app: 'Gecko Care Tracker',
-          version: 2,
-          exportedAt: new Date().toISOString(),
-          data: appState
-        };
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `gecko_care_backup_${getTodayStr()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        showToast('Đã xuất file JSON sao lưu thành công!');
-      } catch (e) {
-        showToast('Không thể xuất file JSON.', 'error');
+    function showWeightPoint(idx) {
+      const coords = window._chartCoords || [];
+      if (!coords[idx]) return;
+      const cur = coords[idx].p;
+      let deltaStr = '';
+      if (idx > 0) {
+        const diff = (cur.weight - coords[idx - 1].p.weight).toFixed(1);
+        deltaStr = ` (${diff >= 0 ? '+' : ''}${diff}g so với lần trước)`;
       }
+      document.getElementById('chartTip').textContent = `Ngày ${formatVNDate(cur.date)}: ${cur.weight} gram${deltaStr}`;
     }
 
-    function handleImportJSON(event) {
+    // Sao lưu JSON & CSV
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gecko_care_backup_${todayISO()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Đã xuất file sao lưu JSON!', 'ok');
+    }
+
+    function importJSON(event) {
       const file = event.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
-      reader.onload = function (e) {
+      reader.onload = (e) => {
         try {
-          const parsed = JSON.parse(e.target.result);
-          const imported = parsed.data && Array.isArray(parsed.data.geckos) ? parsed.data : parsed;
-
-          if (!imported || !Array.isArray(imported.geckos)) {
-            throw new Error('Invalid JSON structure');
-          }
-
-          openConfirmModal(
-            'Khôi phục dữ liệu từ JSON?',
-            `Tìm thấy ${imported.geckos.length} hồ sơ bé trong tệp sao lưu. Dữ liệu hiện tại trên trình duyệt sẽ được thay thế bằng tệp này.`,
-            () => {
-              appState = {
-                geckos: imported.geckos,
-                activeGeckoId: imported.activeGeckoId || (imported.geckos[0] ? imported.geckos[0].id : null),
-                notificationsEnabled: Boolean(imported.notificationsEnabled),
-                firedNotifications: imported.firedNotifications || {}
-              };
-              saveState();
-              renderAll();
-              showToast('Đã khôi phục dữ liệu thành công!');
-            }
-          );
+          const data = JSON.parse(e.target.result);
+          if (!data || !Array.isArray(data.geckos)) throw new Error('Invalid format');
+          // Chuẩn hóa dữ liệu nếu nhập từ bản cũ
+          data.geckos.forEach((g) => {
+            g.logs = (g.logs || []).map((l) => {
+              if (!Array.isArray(l.feeders)) {
+                l.feeders = l.feederCount > 0 ? [{ type: l.feederType || 'Gián Dubia', count: l.feederCount }] : [];
+              }
+              if (!Array.isArray(l.supplements)) {
+                l.supplements = l.supplement ? [l.supplement] : ['Không rắc'];
+              }
+              return l;
+            });
+          });
+          state = {
+            geckos: data.geckos,
+            activeId: data.geckos.length ? (data.activeId || data.geckos[0].id) : null,
+            notifEnabled: Boolean(data.notifEnabled)
+          };
+          saveState();
+          renderAll();
+          showToast('Đã khôi phục dữ liệu thành công!', 'ok');
         } catch (err) {
-          showToast('Tệp JSON không hợp lệ hoặc bị lỗi.', 'error');
-        } finally {
-          event.target.value = '';
+          showToast('Tệp JSON không hợp lệ!', 'err');
         }
+        event.target.value = '';
       };
       reader.readAsText(file);
     }
 
     function exportCSV() {
-      const gecko = getActiveGecko();
-      if (!gecko || !gecko.logs || gecko.logs.length === 0) {
-        showToast('Bé hiện tại chưa có nhật ký để xuất CSV.', 'error');
+      const pet = getActivePet();
+      if (!pet || !(pet.logs || []).length) {
+        showToast('Chưa có dữ liệu nhật ký để xuất!', 'err');
         return;
       }
-
-      const headers = ['Tên bé', 'Morph', 'Giới tính', 'Ngày', 'Giờ cho ăn', 'Khẩu phần mồi', 'Bổ sung dinh dưỡng', 'Cân nặng (g)', 'Tình trạng phân', 'Trạng thái', 'Ghi chú'];
-      const rows = [...gecko.logs]
-        .sort((a, b) => `${b.date} ${b.time || '00:00'}`.localeCompare(`${a.date} ${a.time || '00:00'}`))
-        .map(l => [
-          gecko.name,
-          gecko.morph,
-          gecko.gender,
+      const rows = [['Tên bé', 'Morph', 'Giới tính', 'Ngày', 'Giờ', 'Cân nặng (g)', 'Khẩu phần mồi', 'Bổ sung khoáng', 'Tình trạng phân', 'Trạng thái', 'Ghi chú']];
+      [...pet.logs].sort((a, b) => b.date.localeCompare(a.date)).forEach((l) => {
+        const food = (l.feeders || []).map((f) => `${f.count} ${f.type}`).join(' + ') || 'Nhịn ăn';
+        rows.push([
+          pet.name,
+          pet.morph,
+          pet.gender,
           l.date,
           l.time || '',
-          `"${formatFeedersSummary(l.feeders).replace(/"/g, '""')}"`,
-          `"${(l.supplements || ['Không rắc']).join(', ')}"`,
           l.weight || '',
-          `"${(l.poop || '').replace(/"/g, '""')}"`,
-          `"${(l.status || '').replace(/"/g, '""')}"`,
-          `"${(l.notes || '').replace(/"/g, '""')}"`
+          food,
+          (l.supplements || []).join(', '),
+          l.poop || '',
+          l.status || '',
+          l.notes || ''
         ]);
-
-      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      });
+      const csvContent = '\uFEFF' + rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Nhat_ky_${gecko.name}_${getTodayStr()}.csv`;
-      document.body.appendChild(a);
+      a.download = `Nhat_ky_${pet.name}_${todayISO()}.csv`;
       a.click();
-      a.remove();
       URL.revokeObjectURL(url);
-      showToast(`Đã xuất file CSV cho bé ${gecko.name}!`);
+      showToast('Đã xuất file Excel (.csv)!', 'ok');
     }
 
-    function confirmClearAllData() {
-      openConfirmModal(
-        'Xóa toàn bộ dữ liệu?',
-        'Tất cả hồ sơ bé và nhật ký trên trình duyệt này sẽ bị xóa sạch về trạng thái trống ban đầu.',
-        () => {
-          appState = {
-            geckos: [],
-            activeGeckoId: null,
-            notificationsEnabled: false,
-            firedNotifications: {}
-          };
+    // Render toàn bộ giao diện
+    function renderAll() {
+      const bar = document.getElementById('petBar');
+      const emptyBox = document.getElementById('emptyState');
+      const appContent = document.getElementById('appContent');
+      const bottomNav = document.getElementById('bottomNav');
+
+      bar.innerHTML = '';
+      if (!state.geckos.length) {
+        emptyBox.style.display = 'block';
+        appContent.style.display = 'none';
+        bottomNav.style.display = 'none';
+        return;
+      }
+
+      if (!state.geckos.some((g) => g.id === state.activeId)) {
+        state.activeId = state.geckos[0].id;
+        saveState();
+      }
+
+      emptyBox.style.display = 'none';
+      appContent.style.display = 'block';
+      bottomNav.style.display = 'grid';
+
+      state.geckos.forEach((g) => {
+        const btn = document.createElement('button');
+        btn.className = 'pet-pill' + (g.id === state.activeId ? ' active' : '');
+        const icon = g.gender === 'Đực' ? '♂' : (g.gender === 'Cái' ? '♀' : '🦎');
+        btn.textContent = `${icon} ${g.name}`;
+        btn.onclick = () => {
+          state.activeId = g.id;
           saveState();
           renderAll();
-          showToast('Đã xóa sạch toàn bộ dữ liệu', 'info');
+        };
+        bar.appendChild(btn);
+      });
+
+      const pet = getActivePet();
+      document.getElementById('ovName').textContent = pet.name;
+      document.getElementById('ovMorph').textContent = pet.morph || 'Normal';
+      document.getElementById('ovGender').textContent = pet.gender || 'Chưa rõ';
+
+      const metaParts = [];
+      if (pet.age) metaParts.push(`🎂 Tuổi/Nở: <b>${escapeHTML(pet.age)}</b>`);
+      metaParts.push(`🔄 Chu kỳ: <b>${pet.cycleDays || 2} ngày/lần</b>`);
+      metaParts.push(`⏰ Giờ ăn: <b>${pet.feedTime || '19:00'}</b>`);
+      if (pet.note) metaParts.push(`📌 ${escapeHTML(pet.note)}`);
+      document.getElementById('ovMeta').innerHTML = metaParts.join(' &nbsp;•&nbsp; ');
+
+      // Lịch cho ăn
+      const sched = getNextFeedingInfo(pet);
+      document.getElementById('schedDateTime').innerHTML = `${formatVNDate(sched.isoDate)} • <span>${sched.time}</span>`;
+      document.getElementById('schedSub').textContent = sched.subText;
+      const badge = document.getElementById('schedBadge');
+      badge.textContent = sched.badgeText;
+      badge.className = 'status-pill ' + sched.badgeClass;
+      updateNotifUI();
+
+      // Logs sắp xếp mới nhất lên đầu
+      const sortedLogs = [...(pet.logs || [])].sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
+
+      // KPIs
+      const weightEntries = sortedLogs.filter((l) => typeof l.weight === 'number' && l.weight > 0);
+      if (weightEntries.length) {
+        document.getElementById('kpiWeight').textContent = `${weightEntries[0].weight} g`;
+        if (weightEntries.length > 1) {
+          const diff = (weightEntries[0].weight - weightEntries[1].weight).toFixed(1);
+          document.getElementById('kpiWeightSub').textContent = `${diff >= 0 ? '+' : ''}${diff}g so với lần trước`;
+        } else {
+          document.getElementById('kpiWeightSub').textContent = `Cân ngày ${formatVNDate(weightEntries[0].date)}`;
         }
-      );
+      } else {
+        document.getElementById('kpiWeight').textContent = '-- g';
+        document.getElementById('kpiWeightSub').textContent = 'Chưa nhập số cân';
+      }
+
+      const d7 = new Date();
+      d7.setDate(d7.getDate() - 7);
+      const cutoff = `${d7.getFullYear()}-${String(d7.getMonth() + 1).padStart(2, '0')}-${String(d7.getDate()).padStart(2, '0')}`;
+      const recentMeals = sortedLogs.filter((l) => l.date >= cutoff && Array.isArray(l.feeders) && l.feeders.length > 0);
+      const totalPrey = recentMeals.reduce((sum, l) => sum + l.feeders.reduce((s, f) => s + (f.count || 0), 0), 0);
+      document.getElementById('kpiFood').textContent = `${totalPrey} con`;
+      document.getElementById('kpiFoodSub').textContent = `Trong ${recentMeals.length} bữa ăn`;
+
+      const poopEntry = sortedLogs.find((l) => l.poop && l.poop !== 'Chưa đi phân');
+      if (poopEntry) {
+        document.getElementById('kpiPoop').textContent = poopEntry.poop.split('(')[0].trim();
+        document.getElementById('kpiPoopSub').textContent = `Ngày ${formatVNDate(poopEntry.date)}`;
+      } else {
+        document.getElementById('kpiPoop').textContent = 'Chưa có';
+        document.getElementById('kpiPoopSub').textContent = 'Đang theo dõi';
+      }
+
+      if (sortedLogs.length) {
+        document.getElementById('kpiStatus').textContent = sortedLogs[0].status || 'Bình thường';
+        document.getElementById('kpiStatusSub').textContent = `Ngày ${formatVNDate(sortedLogs[0].date)}`;
+      } else {
+        document.getElementById('kpiStatus').textContent = 'Bình thường';
+        document.getElementById('kpiStatusSub').textContent = 'Chưa có nhật ký';
+      }
+
+      // Danh sách log
+      const emptyLogHTML = '<div style="text-align:center;padding:18px;color:var(--muted);font-size:13px;">Chưa có nhật ký nào.</div>';
+      document.getElementById('recentLogs').innerHTML = sortedLogs.slice(0, 5).map(renderLogItemHTML).join('') || emptyLogHTML;
+      document.getElementById('allLogs').innerHTML = sortedLogs.map(renderLogItemHTML).join('') || emptyLogHTML;
+
+      // Tab Cân nặng
+      document.getElementById('weightLogs').innerHTML = weightEntries.length
+        ? weightEntries.map((w) => `
+            <div class="log-item">
+              <div>
+                <div class="log-date">${formatVNDate(w.date)}</div>
+                <div class="log-main">${w.weight} gram</div>
+              </div>
+            </div>
+          `).join('')
+        : '<div style="text-align:center;padding:18px;color:var(--muted);font-size:13px;">Chưa có dữ liệu cân nặng.</div>';
+
+      renderWeightChart();
     }
 
-    // ==================== KHỞI CHẠY ỨNG DỤNG ====================
-    window.addEventListener('DOMContentLoaded', () => {
-      loadState();
-      switchTab('overview');
-      renderAll();
-
-      // Kiểm tra thông báo giờ cho ăn mỗi 20 giây
-      checkFeedingNotifications();
-      setInterval(checkFeedingNotifications, 20000);
-    });
+    initLogForm();
+    renderAll();
   </script>
 </body>
 </html>
