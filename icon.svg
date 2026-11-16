@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FB923C"/>
+      <stop offset="100%" stop-color="#C2410C"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g fill="#FFFFFF">
+    <!-- Đầu -->
+    <ellipse cx="256" cy="136" rx="44" ry="52"/>
+    <!-- Mắt -->
+    <circle cx="236" cy="126" r="7" fill="#9A3412"/>
+    <circle cx="276" cy="126" r="7" fill="#9A3412"/>
+    <!-- Thân -->
+    <ellipse cx="256" cy="248" rx="46" ry="78"/>
+    <!-- Đuôi uốn cong -->
+    <path d="M256 320 C256 378, 326 392, 314 436 C306 462, 266 456, 274 428 C280 406, 232 392, 236 320 Z"/>
+    <!-- 4 Chân -->
+    <path d="M214 202 C172 184, 152 198, 144 214" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" fill="none"/>
+    <path d="M298 202 C340 184, 360 198, 368 214" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" fill="none"/>
+    <path d="M216 286 C172 296, 154 316, 148 334" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" fill="none"/>
+    <path d="M296 286 C340 296, 358 316, 364 334" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" fill="none"/>
+  </g>
+  <!-- Đốm đặc trưng Leopard Gecko -->
+  <g fill="#EA580C" opacity="0.55">
+    <circle cx="246" cy="218" r="7"/>
+    <circle cx="268" cy="236" r="8"/>
+    <circle cx="244" cy="260" r="7"/>
+    <circle cx="264" cy="282" r="6"/>
+  </g>
+</svg>
