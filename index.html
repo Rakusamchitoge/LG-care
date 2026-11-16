@@ -496,6 +496,20 @@
       padding: 4px 6px;
       cursor: pointer;
     }
+    .btn-edit-row {
+      background: none;
+      border: none;
+      color: var(--blue);
+      font-size: 16px;
+      padding: 4px 6px;
+      cursor: pointer;
+    }
+    .log-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
 
     .chip-group {
       display: flex;
@@ -749,7 +763,7 @@
 
       <section id="tab-log" class="tab-pane">
         <div class="card">
-          <div class="card-title">📝 Ghi nhận bữa ăn, nhiệt độ & thể trạng</div>
+          <div class="card-title" id="logFormTitle">📝 Ghi nhận bữa ăn, nhiệt độ & thể trạng</div>
 
           <div class="form-row-2">
             <div class="form-group">
@@ -827,7 +841,8 @@
             <input type="text" id="logNotes" placeholder="VD: Đớp từ nhíp, vừa xịt ẩm hang...">
           </div>
 
-          <button type="button" class="btn btn-primary" onclick="saveLog()">💾 Lưu nhật ký</button>
+          <button type="button" class="btn btn-primary" id="btnSaveLog" onclick="saveLog()">💾 Lưu nhật ký</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelEditLog" onclick="cancelEditLog()" style="display:none; margin-top:8px;">✕ Hủy chỉnh sửa</button>
         </div>
 
         <div class="card">
@@ -978,6 +993,7 @@
     let syncCfg = loadSyncCfg();
     let weatherData = loadWeatherCache();
     let editingPetId = null;
+    let editingLogId = null;
     let swReg = null;
     let lastNotifiedKey = '';
     let isSyncing = false;
@@ -1066,7 +1082,7 @@
         levelClass = 'cold';
         badgeClass = 'wb-cold';
         badgeText = '❄️ Trời rét sâu';
-        advice = 'Nhiệt độ ngoài trời đang rất lạnh (<b>' + temp + '°C</b>). Bắt buộc bật sưởi (tấm sưởi kèm thermostat hoặc bóng sưởi gốm/DHP) <b>24/24</b> để giữ vùng nóng của ' + name + ' đạt <b>30–32°C</b>. Hạn chế mở nắp chuồng lâu gây sốc nhiệt và kiểm tra kỹ nhiệt độ trước khi cho ăn vì bé khó tiêu hóa nếu vùng nóng dưới 28°C.';
+        advice = 'Nhiệt độ ngoài trời đang rất lạnh (<b>' + temp + '°C</b>). Bắt buộc bật sưởi (tấm sưởi kèm thermostat hoặc bóng sưởi gốm/DHP) <b>24/24</b> để giữ vùng nóng của ' + name + ' đạt <b>30–32°C</b>. Hạn chế mở nắp chuồng lâu gây sốc nhiệt và kiểm tra kỹ nhiệt độ trước khi cho ăn vì bé rất khó tiêu hóa nếu vùng nóng dưới 28°C.';
       } else if (temp < 22) {
         levelClass = 'cool';
         badgeClass = 'wb-cool';
@@ -1414,7 +1430,6 @@
       showToast('Đã ngắt kết nối đồng bộ');
     }
 
-    // Tự động đồng bộ Firebase & tự động cập nhật thời tiết khi quay lại app hoặc định kỳ
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible') {
         if (getEndpoint()) pullFromCloud(false);
@@ -1459,14 +1474,18 @@
       return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     }
 
-    function switchTab(tabName) {
+    function switchTab(tabName, preserveEdit) {
       document.querySelectorAll('.tab-pane').forEach(function (el) { el.classList.remove('active'); });
       document.querySelectorAll('.nav-btn').forEach(function (el) { el.classList.remove('active'); });
       document.getElementById('tab-' + tabName).classList.add('active');
       document.querySelector('.nav-btn[data-tab="' + tabName + '"]').classList.add('active');
 
-      if (tabName === 'log') initLogForm();
-      if (tabName === 'weight') renderWeightChart();
+      if (tabName === 'log' && !preserveEdit) {
+        initLogForm();
+      }
+      if (tabName === 'weight') {
+        renderWeightChart();
+      }
     }
 
     function openPetModal(isEdit) {
@@ -1743,7 +1762,12 @@
     }
 
     function initLogForm() {
+      editingLogId = null;
       const pet = getActivePet();
+      document.getElementById('logFormTitle').textContent = '📝 Ghi nhận bữa ăn, nhiệt độ & thể trạng';
+      document.getElementById('btnSaveLog').textContent = '💾 Lưu nhật ký';
+      document.getElementById('btnCancelEditLog').style.display = 'none';
+
       document.getElementById('logDate').value = todayISO();
       document.getElementById('logTime').value = (pet && pet.feedTime) || '19:00';
       document.getElementById('logWarmTemp').value = '';
@@ -1760,6 +1784,52 @@
       document.querySelectorAll('#suppChips .chip').forEach(function (c) {
         c.classList.toggle('selected', c.dataset.val === 'Không rắc');
       });
+    }
+
+    function editLog(logId) {
+      const pet = getActivePet();
+      if (!pet) return;
+      const log = (pet.logs || []).find(function (l) { return l.id === logId; });
+      if (!log) return;
+
+      editingLogId = log.id;
+      switchTab('log', true);
+
+      document.getElementById('logFormTitle').textContent = '✏️ Chỉnh sửa nhật ký (' + formatVNDate(log.date) + ')';
+      document.getElementById('btnSaveLog').textContent = '💾 Cập nhật nhật ký';
+      document.getElementById('btnCancelEditLog').style.display = 'block';
+
+      document.getElementById('logDate').value = log.date || todayISO();
+      document.getElementById('logTime').value = log.time || (pet.feedTime || '19:00');
+      document.getElementById('logWarmTemp').value = (typeof log.warmTemp === 'number' && !isNaN(log.warmTemp)) ? log.warmTemp : '';
+      document.getElementById('logCoolTemp').value = (typeof log.coolTemp === 'number' && !isNaN(log.coolTemp)) ? log.coolTemp : '';
+      document.getElementById('logWeight').value = (typeof log.weight === 'number' && !isNaN(log.weight)) ? log.weight : '';
+      document.getElementById('logStatus').value = log.status || 'Bình thường';
+      document.getElementById('logPoop').value = log.poop || 'Chưa đi phân';
+      document.getElementById('logNotes').value = log.notes || '';
+
+      const list = document.getElementById('feederList');
+      list.innerHTML = '';
+      if (Array.isArray(log.feeders) && log.feeders.length > 0) {
+        log.feeders.forEach(function (f) {
+          addFeederRow(f.type || 'Gián Dubia', typeof f.count === 'number' ? f.count : 1);
+        });
+      } else {
+        addFeederRow('Không cho ăn', 0);
+      }
+
+      const supps = Array.isArray(log.supplements) && log.supplements.length ? log.supplements : ['Không rắc'];
+      document.querySelectorAll('#suppChips .chip').forEach(function (c) {
+        c.classList.toggle('selected', supps.indexOf(c.dataset.val) !== -1);
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast('Đang sửa bản ghi ngày ' + formatVNDate(log.date));
+    }
+
+    function cancelEditLog() {
+      initLogForm();
+      showToast('Đã hủy chỉnh sửa');
     }
 
     function addFeederRow(defaultType, defaultCount) {
@@ -1842,8 +1912,8 @@
         function (c) { return c.dataset.val; }
       );
 
-      const newEntry = {
-        id: 'log_' + Date.now(),
+      const logData = {
+        id: editingLogId || ('log_' + Date.now()),
         date: date,
         time: time,
         warmTemp: (typeof warmTemp === 'number' && !isNaN(warmTemp) && warmTemp > 0) ? warmTemp : null,
@@ -1857,13 +1927,28 @@
       };
 
       pet.logs = pet.logs || [];
-      pet.logs.push(newEntry);
+      let wasEdited = false;
+      if (editingLogId) {
+        const idx = pet.logs.findIndex(function (l) { return l.id === editingLogId; });
+        if (idx !== -1) {
+          pet.logs[idx] = logData;
+          wasEdited = true;
+        } else {
+          pet.logs.push(logData);
+        }
+      } else {
+        pet.logs.push(logData);
+      }
+
       saveState(false);
+      initLogForm();
       renderAll();
       switchTab('overview');
 
-      if (newEntry.warmTemp && (newEntry.warmTemp < 29 || newEntry.warmTemp > 33)) {
-        showToast('Đã lưu! Lưu ý vùng nóng ' + newEntry.warmTemp + '°C đang lệch ngưỡng 30–32°C.', 'err');
+      if (logData.warmTemp && (logData.warmTemp < 29 || logData.warmTemp > 33)) {
+        showToast((wasEdited ? 'Đã cập nhật! ' : 'Đã lưu! ') + 'Lưu ý vùng nóng ' + logData.warmTemp + '°C đang lệch ngưỡng 30–32°C.', 'err');
+      } else if (wasEdited) {
+        showToast('Đã cập nhật bản ghi nhật ký!', 'ok');
       } else {
         showToast('Đã lưu nhật ký cho ' + pet.name + '!', 'ok');
       }
@@ -1874,6 +1959,9 @@
       if (!pet) return;
       if (!confirm('Xóa bản ghi nhật ký này?')) return;
       pet.logs = (pet.logs || []).filter(function (l) { return l.id !== logId; });
+      if (editingLogId === logId) {
+        initLogForm();
+      }
       saveState(false);
       renderAll();
       showToast('Đã xóa bản ghi');
@@ -1909,7 +1997,10 @@
             '<div class="log-sub">🦎 ' + escapeHTML(log.status) + '</div>' +
             noteLine +
           '</div>' +
-          '<button type="button" class="btn-del-row" onclick="deleteLog(\'' + log.id + '\')" title="Xóa">🗑️</button>' +
+          '<div class="log-actions">' +
+            '<button type="button" class="btn-edit-row" onclick="editLog(\'' + log.id + '\')" title="Sửa">✏️</button>' +
+            '<button type="button" class="btn-del-row" onclick="deleteLog(\'' + log.id + '\')" title="Xóa">🗑️</button>' +
+          '</div>' +
         '</div>'
       );
     }
@@ -2117,6 +2208,7 @@
         btn.textContent = icon + ' ' + g.name;
         btn.onclick = function () {
           state.activeId = g.id;
+          editingLogId = null;
           saveState(true);
           renderAll();
         };
