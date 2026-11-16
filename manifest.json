@@ -1,0 +1,19 @@
+{
+  "name": "Gecko Care Tracker",
+  "short_name": "Gecko Care",
+  "description": "Nhật ký theo dõi sức khỏe, khẩu phần ăn và tăng trưởng Leopard Gecko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#EA580C",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
