@@ -216,6 +216,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
     }
 
     .empty-box {
@@ -258,6 +259,76 @@
       margin-top: 12px;
       padding-top: 10px;
       border-top: 1px solid var(--border);
+    }
+
+    /* Weather & Temperature Advice Card */
+    .weather-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 4px 0 10px;
+    }
+    .weather-temp-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .weather-temp {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--text);
+    }
+    .weather-cond {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .weather-loc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    .weather-badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .wb-cold { background: #DBEAFE; color: #1D4ED8; }
+    .wb-cool { background: #E0F2FE; color: #0369A1; }
+    .wb-ideal { background: #DCFCE7; color: #15803D; }
+    .wb-warm { background: #FFEDD5; color: #C2410C; }
+    .wb-hot { background: #FEE2E2; color: #B91C1C; }
+
+    .weather-advice {
+      padding: 10px 12px;
+      border-radius: 11px;
+      font-size: 13px;
+      line-height: 1.5;
+      background: #F8FAFC;
+      border-left: 4px solid var(--primary);
+      color: #1E293B;
+    }
+    .weather-advice.cold { background: #EFF6FF; border-left-color: #2563EB; }
+    .weather-advice.cool { background: #F0F9FF; border-left-color: #0284C7; }
+    .weather-advice.ideal { background: #F0FDF4; border-left-color: #16A34A; }
+    .weather-advice.warm { background: #FFF7ED; border-left-color: #EA580C; }
+    .weather-advice.hot { background: #FEF2F2; border-left-color: #DC2626; }
+
+    .auto-sync-note {
+      margin-top: 7px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
     }
 
     .sched-label {
@@ -363,6 +434,28 @@
       border-color: var(--primary);
     }
 
+    .temp-input-box {
+      background: #FFF7ED;
+      border: 1px solid #FED7AA;
+      border-radius: 12px;
+      padding: 10px 10px 2px;
+      margin-bottom: 12px;
+    }
+    .temp-box-head {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .temp-box-head span {
+      font-weight: 500;
+      font-size: 11px;
+      color: #7C2D12;
+    }
+
     .feeder-row {
       display: grid;
       grid-template-columns: 1fr auto auto;
@@ -437,6 +530,20 @@
     .log-date { font-size: 12px; font-weight: 700; color: var(--muted); }
     .log-main { font-size: 14px; font-weight: 700; margin: 3px 0; }
     .log-sub { font-size: 12px; color: #475569; line-height: 1.45; }
+    .temp-pill-inline {
+      display: inline-block;
+      margin-top: 3px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #F1F5F9;
+      color: #334155;
+    }
+    .temp-pill-inline.warn {
+      background: var(--red-soft);
+      color: var(--red);
+    }
 
     .chart-wrap {
       width: 100%;
@@ -581,6 +688,17 @@
           </div>
         </div>
 
+        <!-- Thẻ Thời tiết tự động & Lời khuyên chăm sóc -->
+        <div class="card" id="weatherCard">
+          <div class="card-title" style="margin-bottom:8px;">
+            <span>🌡️ Thời tiết & Nhiệt độ khu vực</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnRefreshWeather" onclick="fetchLocalWeather(true)">🔄 Làm mới</button>
+          </div>
+          <div id="weatherContent">
+            <div style="font-size:13px;color:var(--muted);">Đang tự động cập nhật thời tiết tại vị trí của bạn...</div>
+          </div>
+        </div>
+
         <div class="card">
           <div class="sched-label">LỊCH CHO ĂN TIẾP THEO</div>
           <div id="schedDateTime" class="sched-time">--/--/---- • <span>19:00</span></div>
@@ -609,14 +727,14 @@
             <div id="kpiFoodSub" class="kpi-sub">Trong 0 bữa ăn</div>
           </div>
           <div class="kpi">
-            <div class="kpi-lbl">Đi phân gần nhất</div>
-            <div id="kpiPoop" class="kpi-val" style="font-size:15px;">Chưa có</div>
-            <div id="kpiPoopSub" class="kpi-sub">Đang theo dõi</div>
+            <div class="kpi-lbl">Nhiệt độ chuồng đo gần nhất</div>
+            <div id="kpiTemp" class="kpi-val" style="font-size:15px;">-- / --°C</div>
+            <div id="kpiTempSub" class="kpi-sub">Chưa đo trong chuồng</div>
           </div>
           <div class="kpi">
-            <div class="kpi-lbl">Thể trạng & Lột xác</div>
-            <div id="kpiStatus" class="kpi-val" style="font-size:15px;">Bình thường</div>
-            <div id="kpiStatusSub" class="kpi-sub">Chưa có nhật ký</div>
+            <div class="kpi-lbl">Đi phân & Thể trạng</div>
+            <div id="kpiPoop" class="kpi-val" style="font-size:15px;">Chưa có</div>
+            <div id="kpiStatusSub" class="kpi-sub">Bình thường</div>
           </div>
         </div>
 
@@ -631,7 +749,7 @@
 
       <section id="tab-log" class="tab-pane">
         <div class="card">
-          <div class="card-title">📝 Ghi nhận bữa ăn & thể trạng</div>
+          <div class="card-title">📝 Ghi nhận bữa ăn, nhiệt độ & thể trạng</div>
 
           <div class="form-row-2">
             <div class="form-group">
@@ -641,6 +759,23 @@
             <div class="form-group">
               <label for="logTime">Giờ cho ăn</label>
               <input type="time" id="logTime">
+            </div>
+          </div>
+
+          <div class="temp-input-box">
+            <div class="temp-box-head">
+              <b>🌡️ Nhiệt độ đo thực tế trong chuồng</b>
+              <span>Chuẩn: Nóng 30–32°C | Mát 24–26°C</span>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group" style="margin-bottom:8px;">
+                <label for="logWarmTemp">Vùng nóng (°C)</label>
+                <input type="number" id="logWarmTemp" step="0.1" min="0" max="60" placeholder="VD: 31.2">
+              </div>
+              <div class="form-group" style="margin-bottom:8px;">
+                <label for="logCoolTemp">Vùng mát (°C)</label>
+                <input type="number" id="logCoolTemp" step="0.1" min="0" max="60" placeholder="VD: 25.0">
+              </div>
             </div>
           </div>
 
@@ -689,7 +824,7 @@
 
           <div class="form-group">
             <label for="logNotes">Ghi chú quan sát</label>
-            <input type="text" id="logNotes" placeholder="VD: Đớp từ nhíp, nhiệt vùng nóng 31°C...">
+            <input type="text" id="logNotes" placeholder="VD: Đớp từ nhíp, vừa xịt ẩm hang...">
           </div>
 
           <button type="button" class="btn btn-primary" onclick="saveLog()">💾 Lưu nhật ký</button>
@@ -836,18 +971,28 @@
   <script>
     const STORAGE_KEY = 'gecko_care_tracker_pwa_v1';
     const SYNC_CFG_KEY = 'gecko_care_sync_cfg_v1';
+    const WEATHER_CACHE_KEY = 'gecko_care_weather_v2';
+    const WEATHER_AUTO_INTERVAL_MS = 15 * 60 * 1000;
 
     let state = loadState();
     let syncCfg = loadSyncCfg();
+    let weatherData = loadWeatherCache();
     let editingPetId = null;
     let swReg = null;
     let lastNotifiedKey = '';
     let isSyncing = false;
+    let isFetchingWeather = false;
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').then(function (reg) {
         swReg = reg;
       }).catch(function () {});
+    }
+
+    function escapeHTML(str) {
+      const d = document.createElement('div');
+      d.textContent = String(str || '');
+      return d.innerHTML.replace(/"/g, '&quot;');
     }
 
     function loadState() {
@@ -870,6 +1015,230 @@
         if (raw) return JSON.parse(raw);
       } catch (e) {}
       return { url: '', code: '', lastSyncTime: '' };
+    }
+
+    function loadWeatherCache() {
+      try {
+        const raw = localStorage.getItem(WEATHER_CACHE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return null;
+    }
+
+    function saveWeatherCache(data) {
+      weatherData = data;
+      try {
+        localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    function describeWeatherCode(code) {
+      if (code === 0) return '☀️ Trời quang nắng';
+      if (code === 1 || code === 2) return '⛅ Nắng nhẹ, ít mây';
+      if (code === 3) return '☁️ Trời nhiều mây';
+      if (code === 45 || code === 48) return '🌫️ Có sương mù';
+      if (code >= 51 && code <= 57) return '🌦️ Mưa phùn nhẹ';
+      if (code >= 61 && code <= 67) return '🌧️ Trời đang mưa';
+      if (code >= 80 && code <= 82) return '🌦️ Mưa rào';
+      if (code >= 95) return '⛈️ Có mưa dông';
+      return '🌤️ Thời tiết hiện tại';
+    }
+
+    function getLatestRecordedTemps(pet) {
+      if (!pet || !Array.isArray(pet.logs)) return null;
+      const sorted = pet.logs.slice().sort(function (a, b) {
+        return (b.date + (b.time || '')).localeCompare(a.date + (a.time || ''));
+      });
+      const entry = sorted.find(function (l) {
+        return (typeof l.warmTemp === 'number' && !isNaN(l.warmTemp)) || (typeof l.coolTemp === 'number' && !isNaN(l.coolTemp));
+      });
+      return entry || null;
+    }
+
+    function getTemperatureAdvice(temp, humidity, pet) {
+      const name = escapeHTML((pet && pet.name) || 'bé');
+      let levelClass = 'ideal';
+      let badgeClass = 'wb-ideal';
+      let badgeText = '✅ Thời tiết lý tưởng';
+      let advice = '';
+
+      if (temp < 16) {
+        levelClass = 'cold';
+        badgeClass = 'wb-cold';
+        badgeText = '❄️ Trời rét sâu';
+        advice = 'Nhiệt độ ngoài trời đang rất lạnh (<b>' + temp + '°C</b>). Bắt buộc bật sưởi (tấm sưởi kèm thermostat hoặc bóng sưởi gốm/DHP) <b>24/24</b> để giữ vùng nóng của ' + name + ' đạt <b>30–32°C</b>. Hạn chế mở nắp chuồng lâu gây sốc nhiệt và kiểm tra kỹ nhiệt độ trước khi cho ăn vì bé khó tiêu hóa nếu vùng nóng dưới 28°C.';
+      } else if (temp < 22) {
+        levelClass = 'cool';
+        badgeClass = 'wb-cool';
+        badgeText = '🧥 Trời se lạnh';
+        advice = 'Thời tiết đang se lạnh (<b>' + temp + '°C</b>), ban đêm vùng mát dễ giảm sâu. Bạn nên duy trì tấm sưởi liên tục để vùng nóng của ' + name + ' ổn định ở <b>30–32°C</b>, đặt hang ẩm sát phía ấm để tránh bị lạnh khi lột xác và ưu tiên cho ăn vào khung giờ ấm nhất trong ngày.';
+      } else if (temp < 28) {
+        levelClass = 'ideal';
+        badgeClass = 'wb-ideal';
+        badgeText = '✅ Nhiệt độ lý tưởng';
+        advice = 'Nhiệt độ môi trường (<b>' + temp + '°C</b>) trùng khớp với dải nhiệt vùng mát chuẩn (24–26°C) của Leopard Gecko. Chỉ cần duy trì tấm sưởi vùng nóng ở mức <b>30–32°C</b> là chuồng của ' + name + ' đạt độ chênh nhiệt hoàn hảo để tiêu hóa và hấp thụ dinh dưỡng.';
+      } else if (temp < 33) {
+        levelClass = 'warm';
+        badgeClass = 'wb-warm';
+        badgeText = '🌤️ Trời khá nóng';
+        advice = 'Nhiệt độ môi trường đang ở mức cao (<b>' + temp + '°C</b>), vùng mát có thể bị thu hẹp. Hãy kiểm tra bộ điều nhiệt (thermostat) để tấm sưởi tự ngắt khi vùng nóng chạm <b>32°C</b>, đảm bảo chuồng thông thoáng và luôn có sẵn khay nước sạch cho ' + name + ' giải nhiệt.';
+      } else {
+        levelClass = 'hot';
+        badgeClass = 'wb-hot';
+        badgeText = '🔥 Cảnh báo nắng nóng';
+        advice = 'Thời tiết nắng nóng gay gắt (<b>' + temp + '°C</b>), nguy cơ sốc nhiệt cao! Tắt bớt thiết bị sưởi nếu nhiệt độ phòng đã trên 30°C, đặt chuồng của ' + name + ' ở góc râm mát tránh nắng chiếu trực tiếp và giữ phòng thông thoáng hoặc bật điều hòa dưới <b>29°C</b>.';
+      }
+
+      const latestTempLog = getLatestRecordedTemps(pet);
+      if (latestTempLog && latestTempLog.date === todayISO()) {
+        const w = latestTempLog.warmTemp;
+        const c = latestTempLog.coolTemp;
+        const parts = [];
+        if (typeof w === 'number') {
+          if (w < 29.5) parts.push('vùng nóng đo hôm nay <b>' + w + '°C</b> (hơi thấp, cần tăng sưởi lên 30–32°C)');
+          else if (w > 32.8) parts.push('vùng nóng đo hôm nay <b>' + w + '°C</b> (hơi cao, nên hạ bớt nhiệt)');
+          else parts.push('vùng nóng đo hôm nay <b>' + w + '°C</b> (đạt chuẩn)');
+        }
+        if (typeof c === 'number') {
+          if (c < 22) parts.push('vùng mát <b>' + c + '°C</b> (hơi lạnh)');
+          else if (c > 28) parts.push('vùng mát <b>' + c + '°C</b> (hơi nóng)');
+          else parts.push('vùng mát <b>' + c + '°C</b> (ổn định)');
+        }
+        if (parts.length) {
+          advice += '<br>📊 <b>Đối chiếu chuồng ' + name + ':</b> ' + parts.join(', ') + '.';
+        }
+      }
+
+      if (typeof humidity === 'number') {
+        if (humidity < 45) {
+          advice += '<br>💧 <i>Độ ẩm không khí đang thấp (' + humidity + '%): nhớ xịt ẩm nhẹ bên trong hang ẩm để ' + name + ' không bị khô da khi lột xác.</i>';
+        } else if (humidity > 82) {
+          advice += '<br>💧 <i>Độ ẩm không khí cao (' + humidity + '%): giữ chuồng thoáng khí, tránh làm ướt nền chuồng để ngừa nấm mốc và viêm hô hấp.</i>';
+        }
+      }
+
+      return { levelClass: levelClass, badgeClass: badgeClass, badgeText: badgeText, advice: advice };
+    }
+
+    function renderWeatherCard(errorMsg) {
+      const box = document.getElementById('weatherContent');
+      if (!box) return;
+      const pet = getActivePet();
+
+      if (weatherData && typeof weatherData.temp === 'number') {
+        const info = getTemperatureAdvice(weatherData.temp, weatherData.humidity, pet);
+        const humText = typeof weatherData.humidity === 'number' ? ' • Độ ẩm ' + weatherData.humidity + '%' : '';
+        const feelText = typeof weatherData.apparentTemp === 'number' ? ' (Cảm nhận ' + weatherData.apparentTemp + '°C)' : '';
+        const condText = weatherData.condText ? '<span class="weather-cond">' + escapeHTML(weatherData.condText) + '</span>' : '';
+        const timeText = weatherData.timeStr ? 'Cập nhật lúc ' + weatherData.timeStr : 'Đã cập nhật';
+        const warnLine = errorMsg ? '<div style="font-size:11px;color:var(--red);margin-top:6px;">' + escapeHTML(errorMsg) + '</div>' : '';
+
+        box.innerHTML =
+          '<div class="weather-main">' +
+            '<div>' +
+              '<div class="weather-temp-row">' +
+                '<span class="weather-temp">' + weatherData.temp + '°C</span>' +
+                condText +
+              '</div>' +
+              '<div class="weather-loc">📍 ' + escapeHTML(weatherData.placeName || 'Vị trí hiện tại') + humText + feelText + '</div>' +
+            '</div>' +
+            '<span class="weather-badge ' + info.badgeClass + '">' + info.badgeText + '</span>' +
+          '</div>' +
+          '<div class="weather-advice ' + info.levelClass + '">' + info.advice + '</div>' +
+          '<div class="auto-sync-note">' +
+            '<span>🔄 Tự động cập nhật mỗi 15 phút</span>' +
+            '<span>🕒 ' + escapeHTML(timeText) + '</span>' +
+          '</div>' +
+          warnLine;
+        return;
+      }
+
+      box.innerHTML =
+        '<div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:10px;">' +
+          (errorMsg ? escapeHTML(errorMsg) : 'Bấm nút bên dưới để cấp quyền vị trí, ứng dụng sẽ tự động cập nhật thời tiết và gợi ý điều chỉnh nhiệt độ chuồng nuôi.') +
+        '</div>' +
+        '<button type="button" class="btn btn-primary btn-sm" onclick="fetchLocalWeather(true)">📍 Cho phép vị trí & Tự động cập nhật</button>';
+    }
+
+    function fetchLocalWeather(manualTrigger) {
+      if (isFetchingWeather) return;
+      const btn = document.getElementById('btnRefreshWeather');
+      const nowMs = Date.now();
+
+      if (!manualTrigger && weatherData && (nowMs - (weatherData.updatedAt || 0) < WEATHER_AUTO_INTERVAL_MS)) {
+        renderWeatherCard();
+        return;
+      }
+
+      if (!('geolocation' in navigator)) {
+        renderWeatherCard('Trình duyệt trên thiết bị này không hỗ trợ định vị GPS.');
+        return;
+      }
+
+      isFetchingWeather = true;
+      if (btn) btn.textContent = '⏳ Đang cập nhật...';
+
+      navigator.geolocation.getCurrentPosition(
+        async function (pos) {
+          const lat = pos.coords.latitude.toFixed(4);
+          const lon = pos.coords.longitude.toFixed(4);
+          try {
+            const wRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&timezone=auto');
+            if (!wRes.ok) throw new Error('Weather API failed');
+            const wJson = await wRes.json();
+            const cur = wJson.current || {};
+            const temp = typeof cur.temperature_2m === 'number' ? Math.round(cur.temperature_2m * 10) / 10 : null;
+            const apparentTemp = typeof cur.apparent_temperature === 'number' ? Math.round(cur.apparent_temperature * 10) / 10 : null;
+            const humidity = typeof cur.relative_humidity_2m === 'number' ? Math.round(cur.relative_humidity_2m) : null;
+            const condText = typeof cur.weather_code === 'number' ? describeWeatherCode(cur.weather_code) : '';
+
+            let placeName = (weatherData && weatherData.placeName) || 'Vị trí hiện tại';
+            try {
+              const gRes = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=vi');
+              if (gRes.ok) {
+                const gJson = await gRes.json();
+                const parts = [gJson.locality, gJson.city || gJson.principalSubdivision].filter(Boolean);
+                if (parts.length) {
+                  placeName = Array.from(new Set(parts)).join(', ');
+                }
+              }
+            } catch (geoErr) {}
+
+            if (temp !== null) {
+              const now = new Date();
+              const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+              saveWeatherCache({
+                temp: temp,
+                apparentTemp: apparentTemp,
+                humidity: humidity,
+                condText: condText,
+                placeName: placeName,
+                updatedAt: Date.now(),
+                timeStr: timeStr
+              });
+              renderWeatherCard();
+              if (manualTrigger) showToast('Đã cập nhật thời tiết: ' + temp + '°C', 'ok');
+            } else {
+              renderWeatherCard('Không đọc được dữ liệu nhiệt độ lúc này.');
+            }
+          } catch (err) {
+            renderWeatherCard('Không thể kết nối máy chủ thời tiết. Vui lòng kiểm tra mạng.');
+          } finally {
+            isFetchingWeather = false;
+            if (btn) btn.textContent = '🔄 Làm mới';
+          }
+        },
+        function (err) {
+          isFetchingWeather = false;
+          if (btn) btn.textContent = '🔄 Làm mới';
+          let msg = 'Chưa có quyền truy cập vị trí. Hãy bấm "Cho phép vị trí & Tự động cập nhật" để bật.';
+          if (err && err.code === 1) {
+            msg = 'Bạn đã chặn quyền vị trí. Hãy bật lại quyền Vị trí cho trang web trong Cài đặt trình duyệt rồi bấm Làm mới.';
+          }
+          renderWeatherCard(msg);
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+      );
     }
 
     function saveSyncCfg() {
@@ -1045,9 +1414,11 @@
       showToast('Đã ngắt kết nối đồng bộ');
     }
 
+    // Tự động đồng bộ Firebase & tự động cập nhật thời tiết khi quay lại app hoặc định kỳ
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible' && getEndpoint()) {
-        pullFromCloud(false);
+      if (document.visibilityState === 'visible') {
+        if (getEndpoint()) pullFromCloud(false);
+        fetchLocalWeather(false);
       }
     });
     setInterval(function () {
@@ -1055,6 +1426,11 @@
         pullFromCloud(false);
       }
     }, 15000);
+    setInterval(function () {
+      if (document.visibilityState === 'visible') {
+        fetchLocalWeather(false);
+      }
+    }, 60000);
 
     function showToast(msg, type) {
       const el = document.getElementById('toast');
@@ -1370,6 +1746,8 @@
       const pet = getActivePet();
       document.getElementById('logDate').value = todayISO();
       document.getElementById('logTime').value = (pet && pet.feedTime) || '19:00';
+      document.getElementById('logWarmTemp').value = '';
+      document.getElementById('logCoolTemp').value = '';
       document.getElementById('logWeight').value = '';
       document.getElementById('logNotes').value = '';
       document.getElementById('logPoop').value = 'Chưa đi phân';
@@ -1443,6 +1821,10 @@
 
       const date = document.getElementById('logDate').value || todayISO();
       const time = document.getElementById('logTime').value || '19:00';
+      const warmRaw = document.getElementById('logWarmTemp').value.trim();
+      const coolRaw = document.getElementById('logCoolTemp').value.trim();
+      const warmTemp = warmRaw !== '' ? Math.round(parseFloat(warmRaw) * 10) / 10 : null;
+      const coolTemp = coolRaw !== '' ? Math.round(parseFloat(coolRaw) * 10) / 10 : null;
       const weightRaw = document.getElementById('logWeight').value.trim();
       const weight = weightRaw ? parseFloat(weightRaw) : null;
 
@@ -1464,6 +1846,8 @@
         id: 'log_' + Date.now(),
         date: date,
         time: time,
+        warmTemp: (typeof warmTemp === 'number' && !isNaN(warmTemp) && warmTemp > 0) ? warmTemp : null,
+        coolTemp: (typeof coolTemp === 'number' && !isNaN(coolTemp) && coolTemp > 0) ? coolTemp : null,
         feeders: feeders,
         supplements: supplements.length ? supplements : ['Không rắc'],
         weight: weight && weight > 0 ? weight : null,
@@ -1477,7 +1861,12 @@
       saveState(false);
       renderAll();
       switchTab('overview');
-      showToast('Đã lưu nhật ký cho ' + pet.name + '!', 'ok');
+
+      if (newEntry.warmTemp && (newEntry.warmTemp < 29 || newEntry.warmTemp > 33)) {
+        showToast('Đã lưu! Lưu ý vùng nóng ' + newEntry.warmTemp + '°C đang lệch ngưỡng 30–32°C.', 'err');
+      } else {
+        showToast('Đã lưu nhật ký cho ' + pet.name + '!', 'ok');
+      }
     }
 
     function deleteLog(logId) {
@@ -1496,6 +1885,18 @@
         : 'Nhịn ăn (0 mồi)';
       const suppText = (log.supplements || []).join(', ');
       const weightBadge = log.weight ? ' • ⚖️ <b>' + log.weight + 'g</b>' : '';
+
+      const hasWarm = typeof log.warmTemp === 'number' && !isNaN(log.warmTemp);
+      const hasCool = typeof log.coolTemp === 'number' && !isNaN(log.coolTemp);
+      let tempLine = '';
+      if (hasWarm || hasCool) {
+        const isWarn = (hasWarm && (log.warmTemp < 29 || log.warmTemp > 33)) || (hasCool && (log.coolTemp < 21 || log.coolTemp > 28));
+        const tParts = [];
+        if (hasWarm) tParts.push('🔥 Nóng: ' + log.warmTemp + '°C');
+        if (hasCool) tParts.push('❄️ Mát: ' + log.coolTemp + '°C');
+        tempLine = '<div><span class="temp-pill-inline' + (isWarn ? ' warn' : '') + '">' + tParts.join(' &nbsp;|&nbsp; ') + '</span></div>';
+      }
+
       const noteLine = log.notes ? '<div class="log-sub" style="color:#0F172A;margin-top:2px;">📝 ' + escapeHTML(log.notes) + '</div>' : '';
 
       return (
@@ -1503,6 +1904,7 @@
           '<div>' +
             '<div class="log-date">' + formatVNDate(log.date) + ' • ' + (log.time || '') + '</div>' +
             '<div class="log-main">' + escapeHTML(foodText) + weightBadge + '</div>' +
+            tempLine +
             '<div class="log-sub">💊 ' + escapeHTML(suppText) + ' &nbsp;|&nbsp; 💩 ' + escapeHTML(log.poop) + '</div>' +
             '<div class="log-sub">🦎 ' + escapeHTML(log.status) + '</div>' +
             noteLine +
@@ -1510,12 +1912,6 @@
           '<button type="button" class="btn-del-row" onclick="deleteLog(\'' + log.id + '\')" title="Xóa">🗑️</button>' +
         '</div>'
       );
-    }
-
-    function escapeHTML(str) {
-      return String(str || '').replace(/[&<>"']/g, function (m) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
-      });
     }
 
     function renderWeightChart() {
@@ -1652,7 +2048,7 @@
         showToast('Chưa có dữ liệu nhật ký để xuất!', 'err');
         return;
       }
-      const rows = [['Tên bé', 'Morph', 'Giới tính', 'Ngày', 'Giờ', 'Cân nặng (g)', 'Khẩu phần mồi', 'Bổ sung khoáng', 'Tình trạng phân', 'Trạng thái', 'Ghi chú']];
+      const rows = [['Tên bé', 'Morph', 'Giới tính', 'Ngày', 'Giờ', 'Nhiệt độ vùng nóng (°C)', 'Nhiệt độ vùng mát (°C)', 'Cân nặng (g)', 'Khẩu phần mồi', 'Bổ sung khoáng', 'Tình trạng phân', 'Trạng thái', 'Ghi chú']];
       pet.logs.slice().sort(function (a, b) { return b.date.localeCompare(a.date); }).forEach(function (l) {
         const food = (l.feeders || []).map(function (f) { return f.count + ' ' + f.type; }).join(' + ') || 'Nhịn ăn';
         rows.push([
@@ -1661,6 +2057,8 @@
           pet.gender,
           l.date,
           l.time || '',
+          typeof l.warmTemp === 'number' ? l.warmTemp : '',
+          typeof l.coolTemp === 'number' ? l.coolTemp : '',
           l.weight || '',
           food,
           (l.supplements || []).join(', '),
@@ -1737,6 +2135,8 @@
       if (pet.note) metaParts.push('📌 ' + escapeHTML(pet.note));
       document.getElementById('ovMeta').innerHTML = metaParts.join(' &nbsp;•&nbsp; ');
 
+      renderWeatherCard();
+
       const sched = getNextFeedingInfo(pet);
       document.getElementById('schedDateTime').innerHTML = formatVNDate(sched.isoDate) + ' • <span>' + sched.time + '</span>';
       document.getElementById('schedSub').textContent = sched.subText;
@@ -1775,21 +2175,27 @@
       document.getElementById('kpiFood').textContent = totalPrey + ' con';
       document.getElementById('kpiFoodSub').textContent = 'Trong ' + recentMeals.length + ' bữa ăn';
 
+      const latestTempEntry = getLatestRecordedTemps(pet);
+      if (latestTempEntry) {
+        const wStr = typeof latestTempEntry.warmTemp === 'number' ? latestTempEntry.warmTemp + '°' : '--';
+        const cStr = typeof latestTempEntry.coolTemp === 'number' ? latestTempEntry.coolTemp + '°' : '--';
+        document.getElementById('kpiTemp').textContent = wStr + ' / ' + cStr + 'C';
+        document.getElementById('kpiTempSub').textContent = 'Nóng / Mát (' + formatVNDate(latestTempEntry.date) + ')';
+      } else {
+        document.getElementById('kpiTemp').textContent = '-- / --°C';
+        document.getElementById('kpiTempSub').textContent = 'Chưa đo trong chuồng';
+      }
+
       const poopEntry = sortedLogs.find(function (l) { return l.poop && l.poop !== 'Chưa đi phân'; });
       if (poopEntry) {
         document.getElementById('kpiPoop').textContent = poopEntry.poop.split('(')[0].trim();
-        document.getElementById('kpiPoopSub').textContent = 'Ngày ' + formatVNDate(poopEntry.date);
       } else {
         document.getElementById('kpiPoop').textContent = 'Chưa có';
-        document.getElementById('kpiPoopSub').textContent = 'Đang theo dõi';
       }
-
       if (sortedLogs.length) {
-        document.getElementById('kpiStatus').textContent = sortedLogs[0].status || 'Bình thường';
-        document.getElementById('kpiStatusSub').textContent = 'Ngày ' + formatVNDate(sortedLogs[0].date);
+        document.getElementById('kpiStatusSub').textContent = (sortedLogs[0].status || 'Bình thường') + ' (' + formatVNDate(sortedLogs[0].date) + ')';
       } else {
-        document.getElementById('kpiStatus').textContent = 'Bình thường';
-        document.getElementById('kpiStatusSub').textContent = 'Chưa có nhật ký';
+        document.getElementById('kpiStatusSub').textContent = 'Bình thường';
       }
 
       const emptyLogHTML = '<div style="text-align:center;padding:18px;color:var(--muted);font-size:13px;">Chưa có nhật ký nào.</div>';
@@ -1814,6 +2220,7 @@
 
     initLogForm();
     renderAll();
+    fetchLocalWeather(false);
     if (getEndpoint()) {
       pullFromCloud(false);
     }
