@@ -1029,6 +1029,161 @@
       stroke-linecap: round;
       stroke-linejoin: round;
     }
+
+    /* ============================================================
+       HỒ SƠ GECKO - STRUCTURED MINI PROFILE CARDS (NO PHOTO, NO EM1/EM2)
+       ============================================================ */
+    .pet-bar {
+      max-width: 680px;
+      margin: 10px auto 0;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .pet-bar::-webkit-scrollbar { display: none; }
+
+    .pet-profile-card {
+      flex-shrink: 0;
+      width: 245px;
+      background: #FFFFFF;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .pet-profile-card:hover:not(.active) {
+      border-color: #CBD5E1;
+      background: #FAFAFA;
+    }
+    .pet-profile-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.15);
+    }
+    .ppc-body {
+      padding: 11px 12px 10px;
+    }
+    .ppc-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .ppc-name {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text);
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ppc-active-dot {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      border: 1px solid #FDBA74;
+      flex-shrink: 0;
+    }
+    .ppc-species {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .ppc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px 10px;
+      margin-top: 9px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .ppc-item.full {
+      grid-column: 1 / -1;
+    }
+    .ppc-lbl {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+    .ppc-val {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ppc-val.muted {
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .ppc-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 1px solid var(--border);
+      background: #F8FAFC;
+    }
+    .ppc-act-btn {
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #475569;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .ppc-act-btn:nth-child(2n) { border-right: none; }
+    .ppc-act-btn:nth-last-child(-n+2) { border-bottom: none; }
+    .ppc-act-btn:hover {
+      background: #E2E8F0;
+      color: var(--primary-dark);
+    }
+    .ppc-act-btn.danger:hover {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+    .ppc-act-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    @media (min-width: 960px) {
+      .topbar {
+        width: 280px;
+      }
+      .container {
+        margin-left: 280px;
+      }
+      .pet-bar {
+        flex-direction: column;
+        overflow-x: visible;
+        gap: 10px;
+      }
+      .pet-profile-card {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -2982,23 +3137,93 @@
       if (sidebarNavWrap) sidebarNavWrap.style.display = 'block';
 
       state.geckos.forEach(function (g) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'pet-pill' + (g.id === state.activeId ? ' active' : '');
-        const icon = g.gender === 'Đực' ? '♂' : (g.gender === 'Cái' ? '♀' : '🦎');
-        btn.textContent = icon + ' ' + g.name;
-        btn.onclick = function () {
-          state.activeId = g.id;
-          editingLogId = null;
-          saveState(true);
-          renderAll();
+        const isActive = g.id === state.activeId;
+        const gSorted = (g.logs || []).slice().sort(function (a, b) {
+          return (b.date + (b.time || '')).localeCompare(a.date + (a.time || ''));
+        });
+        const gWeights = gSorted.filter(function (l) { return typeof l.weight === 'number' && l.weight > 0; });
+        const weightStr = gWeights.length ? (gWeights[0].weight + ' g') : 'N/A';
+        const ageStr = g.age ? escapeHTML(g.age) : 'Chưa cập nhật';
+        const lenStr = g.length ? escapeHTML(g.length) : 'N/A';
+        const genderStr = escapeHTML(g.gender || 'Chưa rõ');
+        const morphStr = escapeHTML(g.morph || 'Normal');
+
+        const card = document.createElement('div');
+        card.className = 'pet-profile-card' + (isActive ? ' active' : '');
+        card.onclick = function () {
+          if (state.activeId !== g.id) {
+            state.activeId = g.id;
+            editingLogId = null;
+            saveState(true);
+            renderAll();
+          }
         };
-        bar.appendChild(btn);
+
+        card.innerHTML =
+          '<div class="ppc-body">' +
+            '<div class="ppc-head">' +
+              '<div class="ppc-name">' + escapeHTML(g.name) + '</div>' +
+              (isActive ? '<span class="ppc-active-dot">Đang chọn</span>' : '') +
+            '</div>' +
+            '<div class="ppc-species">Leopard gecko</div>' +
+            '<div class="ppc-grid">' +
+              '<div class="ppc-item">' +
+                '<div class="ppc-lbl">Tuổi / Nở</div>' +
+                '<div class="ppc-val' + (g.age ? '' : ' muted') + '">' + ageStr + '</div>' +
+              '</div>' +
+              '<div class="ppc-item">' +
+                '<div class="ppc-lbl">Giới tính</div>' +
+                '<div class="ppc-val">' + genderStr + '</div>' +
+              '</div>' +
+              '<div class="ppc-item">' +
+                '<div class="ppc-lbl">Cân nặng</div>' +
+                '<div class="ppc-val' + (gWeights.length ? '' : ' muted') + '">' + weightStr + '</div>' +
+              '</div>' +
+              '<div class="ppc-item">' +
+                '<div class="ppc-lbl">Chiều dài</div>' +
+                '<div class="ppc-val' + (g.length ? '' : ' muted') + '">' + lenStr + '</div>' +
+              '</div>' +
+              '<div class="ppc-item full">' +
+                '<div class="ppc-lbl">Morph</div>' +
+                '<div class="ppc-val" title="' + morphStr + '">' + morphStr + '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="ppc-actions">' +
+            '<button type="button" class="ppc-act-btn" data-act="stats" title="Xem thống kê">' +
+              '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>' +
+            '</button>' +
+            '<button type="button" class="ppc-act-btn" data-act="edit" title="Sửa hồ sơ">' +
+              '<svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>' +
+            '</button>' +
+            '<button type="button" class="ppc-act-btn danger" data-act="del" title="Xóa bé">' +
+              '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>' +
+            '</button>' +
+            '<button type="button" class="ppc-act-btn" data-act="log" title="Ghi nhật ký">' +
+              '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>' +
+            '</button>' +
+          '</div>';
+
+        card.querySelectorAll('.ppc-act-btn').forEach(function (actBtn) {
+          actBtn.onclick = function (e) {
+            e.stopPropagation();
+            state.activeId = g.id;
+            editingLogId = null;
+            saveState(true);
+            renderAll();
+            const act = actBtn.dataset.act;
+            if (act === 'stats') switchTab('weight');
+            else if (act === 'edit') openPetModal(true);
+            else if (act === 'del') deleteCurrentPet();
+            else if (act === 'log') switchTab('log');
+          };
+        });
+
+        bar.appendChild(card);
       });
 
       const pet = getActivePet();
-      const petIndex = state.geckos.findIndex(function (g) { return g.id === pet.id; }) + 1;
-      document.getElementById('ovName').textContent = 'EM' + petIndex + ' · ' + pet.name;
+      document.getElementById('ovName').textContent = pet.name;
       document.getElementById('ovCycleBadge').textContent = '🪪 ' + (pet.cycleDays || 2) + ' ngày/lần • ' + (pet.feedTime || '19:00');
 
       const ageEl = document.getElementById('ovSpecAge');
