@@ -1474,7 +1474,7 @@
             </div>
           </div>
           <div id="aiStatusLine" style="font-size:12.5px;color:var(--muted);line-height:1.45;">
-            AI sẽ tổng hợp cân nặng, khẩu phần mồi, lịch bổ sung Canxi/D3, tình trạng phân và nhiệt độ chuồng để đánh giá sức khỏe của bé.
+            AI sẽ tổng hợp cân nặng, khẩu phần mồi, lịch bổ sung Canxi/D3, tình trạng phân và nhiệt độ chuồng để đánh giá sức khỏe của bé (tự động chuyển model dự phòng nếu quá tải).
           </div>
           <div id="aiResultContainer" style="display:none;"></div>
         </div>
@@ -1763,11 +1763,11 @@
       </div>
 
       <div class="form-group">
-        <label for="selGeminiModel">Mô hình AI ưu tiên (Tự động chuyển dự phòng nếu quá tải)</label>
+        <label for="selGeminiModel">Mô hình AI ưu tiên (tự động chuyển dự phòng nếu quá tải)</label>
         <select id="selGeminiModel">
-          <option value="gemini-2.5-flash">Gemini 2.5 Flash (Nhanh, chịu tải cao - Khuyên dùng)</option>
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash (Nhanh, ổn định - Khuyên dùng)</option>
+          <option value="gemini-3.8-flash">Gemini 3.8 Flash (Thế hệ mới)</option>
           <option value="gemini-2.5-pro">Gemini 2.5 Pro (Phân tích chuyên sâu)</option>
-          <option value="gemini-2.0-flash">Gemini 2.0 Flash (Dự phòng ổn định)</option>
         </select>
       </div>
 
@@ -1977,4 +1977,1892 @@
 
     async function fetchWithTimeout(url, options, timeoutMs) {
       const controller = new AbortController();
-      const timer = setTimeout(function () {
+      const timer = setTimeout(function () { controller.abort(); }, timeoutMs || 6500);
+      try {
+        const opts = Object.assign({}, options || {}, { signal: controller.signal });
+        return await fetch(url, opts);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function describeWttrCode(code) {
+      const c = Number(code);
+      if (c === 113) return '☀️ Trời quang nắng';
+      if (c === 116) return '⛅ Nắng nhẹ, ít mây';
+      if (c === 119 || c === 122) return '☁️ Trời nhiều mây';
+      if (c === 143 || c === 248 || c === 260) return '🌫️ Có sương mù';
+      if ([176, 263, 266, 293, 296, 353].indexOf(c) !== -1) return '🌦️ Mưa phùn nhẹ';
+      if ([299, 302, 305, 308, 356, 359].indexOf(c) !== -1) return '🌧️ Trời đang mưa';
+      if ([200, 386, 389, 392, 395].indexOf(c) !== -1) return '⛈️ Có mưa dông';
+      return '🌤️ Thời tiết hiện tại';
+    }
+
+    function describeMetNoSymbol(sym) {
+      const s = String(sym || '');
+      if (s.indexOf('clearsky') === 0) return '☀️ Trời quang nắng';
+      if (s.indexOf('fair') === 0 || s.indexOf('partlycloudy') === 0) return '⛅ Nắng nhẹ, ít mây';
+      if (s.indexOf('cloudy') === 0) return '☁️ Trời nhiều mây';
+      if (s.indexOf('fog') === 0) return '🌫️ Có sương mù';
+      if (s.indexOf('thunder') !== -1) return '⛈️ Có mưa dông';
+      if (s.indexOf('lightrain') !== -1 || s.indexOf('drizzle') !== -1) return '🌦️ Mưa phùn nhẹ';
+      if (s.indexOf('rain') !== -1) return '🌧️ Trời đang mưa';
+      return '🌤️ Thời tiết hiện tại';
+    }
+
+    async function tryOpenMeteo(lat, lon) {
+      const wRes = await fetchWithTimeout(
+        'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '¤t=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&timezone=auto',
+        {},
+        6000
+      );
+      if (!wRes.ok) throw new Error('Open-Meteo HTTP ' + wRes.status);
+      const wJson = await wRes.json();
+      const cur = wJson.current || {};
+      if (typeof cur.temperature_2m !== 'number') throw new Error('Open-Meteo empty');
+      return {
+        temp: Math.round(cur.temperature_2m * 10) / 10,
+        apparentTemp: typeof cur.apparent_temperature === 'number' ? Math.round(cur.apparent_temperature * 10) / 10 : null,
+        humidity: typeof cur.relative_humidity_2m === 'number' ? Math.round(cur.relative_humidity_2m) : null,
+        condText: typeof cur.weather_code === 'number' ? describeWeatherCode(cur.weather_code) : '🌤️ Thời tiết hiện tại',
+        sourceName: 'Open-Meteo'
+      };
+    }
+
+    async function tryWttrIn(lat, lon) {
+      const wRes = await fetchWithTimeout(
+        'https://wttr.in/' + lat + ',' + lon + '?format=j1',
+        {},
+        6500
+      );
+      if (!wRes.ok) throw new Error('wttr.in HTTP ' + wRes.status);
+      const wJson = await wRes.json();
+      const cur = Array.isArray(wJson.current_condition) && wJson.current_condition[0];
+      if (!cur || cur.temp_C === undefined) throw new Error('wttr.in empty');
+      const tempVal = parseFloat(cur.temp_C);
+      if (isNaN(tempVal)) throw new Error('wttr.in NaN');
+      const feelsVal = cur.FeelsLikeC !== undefined ? parseFloat(cur.FeelsLikeC) : NaN;
+      const humVal = cur.humidity !== undefined ? parseInt(cur.humidity, 10) : NaN;
+      let areaName = '';
+      if (Array.isArray(wJson.nearest_area) && wJson.nearest_area[0]) {
+        const a = wJson.nearest_area[0];
+        const aName = a.areaName && a.areaName[0] && a.areaName[0].value;
+        const rName = a.region && a.region[0] && a.region[0].value;
+        areaName = [aName, rName].filter(Boolean).join(', ');
+      }
+      return {
+        temp: Math.round(tempVal * 10) / 10,
+        apparentTemp: !isNaN(feelsVal) ? Math.round(feelsVal * 10) / 10 : null,
+        humidity: !isNaN(humVal) ? humVal : null,
+        condText: describeWttrCode(cur.weatherCode),
+        areaName: areaName,
+        sourceName: 'wttr.in'
+      };
+    }
+
+    async function tryMetNo(lat, lon) {
+      const wRes = await fetchWithTimeout(
+        'https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=' + lat + '&lon=' + lon,
+        {},
+        6500
+      );
+      if (!wRes.ok) throw new Error('Met.no HTTP ' + wRes.status);
+      const wJson = await wRes.json();
+      const ts = wJson.properties && Array.isArray(wJson.properties.timeseries) && wJson.properties.timeseries[0];
+      const inst = ts && ts.data && ts.data.instant && ts.data.instant.details;
+      if (!inst || typeof inst.air_temperature !== 'number') throw new Error('Met.no empty');
+      const sym = ts.data.next_1_hours && ts.data.next_1_hours.summary && ts.data.next_1_hours.summary.symbol_code;
+      return {
+        temp: Math.round(inst.air_temperature * 10) / 10,
+        apparentTemp: null,
+        humidity: typeof inst.relative_humidity === 'number' ? Math.round(inst.relative_humidity) : null,
+        condText: describeMetNoSymbol(sym),
+        sourceName: 'Met.no'
+      };
+    }
+
+    function fetchLocalWeather(manualTrigger) {
+      if (isFetchingWeather) return;
+      const btn = document.getElementById('btnRefreshWeather');
+      const nowMs = Date.now();
+
+      if (!manualTrigger && weatherData && (nowMs - (weatherData.updatedAt || 0) < WEATHER_AUTO_INTERVAL_MS)) {
+        renderWeatherCard();
+        return;
+      }
+
+      if (!('geolocation' in navigator)) {
+        renderWeatherCard('Trình duyệt trên thiết bị này không hỗ trợ định vị GPS.');
+        return;
+      }
+
+      isFetchingWeather = true;
+      if (btn) btn.textContent = '⏳ Đang cập nhật...';
+
+      navigator.geolocation.getCurrentPosition(
+        async function (pos) {
+          const lat = pos.coords.latitude.toFixed(4);
+          const lon = pos.coords.longitude.toFixed(4);
+          try {
+            let result = null;
+            const providers = [tryOpenMeteo, tryWttrIn, tryMetNo];
+            for (let i = 0; i < providers.length; i++) {
+              try {
+                result = await providers[i](lat, lon);
+                if (result && typeof result.temp === 'number') break;
+              } catch (providerErr) {}
+            }
+
+            if (!result) {
+              throw new Error('All weather providers failed');
+            }
+
+            let placeName = (weatherData && weatherData.placeName) || result.areaName || 'Vị trí hiện tại';
+            try {
+              const gRes = await fetchWithTimeout(
+                'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=vi',
+                {},
+                4500
+              );
+              if (gRes.ok) {
+                const gJson = await gRes.json();
+                const parts = [gJson.locality, gJson.city || gJson.principalSubdivision].filter(Boolean);
+                if (parts.length) {
+                  placeName = Array.from(new Set(parts)).join(', ');
+                }
+              }
+            } catch (geoErr) {}
+
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            saveWeatherCache({
+              temp: result.temp,
+              apparentTemp: result.apparentTemp,
+              humidity: result.humidity,
+              condText: result.condText,
+              placeName: placeName,
+              sourceName: result.sourceName,
+              updatedAt: Date.now(),
+              timeStr: timeStr
+            });
+            renderWeatherCard();
+            if (manualTrigger) {
+              showToast('Đã cập nhật thời tiết: ' + result.temp + '°C (' + result.sourceName + ')', 'ok');
+            }
+          } catch (err) {
+            renderWeatherCard('Tạm thời không kết nối được máy chủ thời tiết. Đang hiển thị dữ liệu gần nhất.');
+          } finally {
+            isFetchingWeather = false;
+            if (btn) btn.textContent = '🔄 Làm mới';
+          }
+        },
+        function (err) {
+          isFetchingWeather = false;
+          if (btn) btn.textContent = '🔄 Làm mới';
+          let msg = 'Chưa có quyền truy cập vị trí. Hãy bấm "Cho phép vị trí & Tự động cập nhật" để bật.';
+          if (err && err.code === 1) {
+            msg = 'Bạn đã chặn quyền vị trí. Hãy bật lại quyền Vị trí cho trang web trong Cài đặt trình duyệt rồi bấm Làm mới.';
+          }
+          renderWeatherCard(msg);
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+      );
+    }
+
+    function saveSyncCfg() {
+      localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(syncCfg));
+    }
+
+    function saveState(skipCloudPush) {
+      if (!skipCloudPush) {
+        state.updatedAt = Date.now();
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (!skipCloudPush && syncCfg.url && syncCfg.code) {
+        pushToCloud(true);
+      }
+    }
+
+    function getEndpoint() {
+      if (!syncCfg.url || !syncCfg.code) return null;
+      let base = syncCfg.url.trim().replace(/\/+$/, '');
+      base = base.replace(/\.json$/, '');
+      const cleanCode = syncCfg.code.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+      return base + '/users/' + cleanCode + '.json';
+    }
+
+    function setSyncBadge(status, text) {
+      const badge = document.getElementById('syncBadge');
+      const detail = document.getElementById('syncStatusDetail');
+      if (badge) {
+        badge.className = 'sync-pill ' + status;
+        badge.textContent = text;
+      }
+      if (detail) {
+        if (!syncCfg.url || !syncCfg.code) {
+          detail.innerHTML = 'Chưa cấu hình đồng bộ đám mây. Dữ liệu hiện chỉ lưu trên máy này.';
+        } else {
+          detail.innerHTML = '✅ <b>Đang kết nối mã:</b> <code>' + escapeHTML(syncCfg.code) + '</code><br>🕒 Lần đồng bộ gần nhất: <b>' + (syncCfg.lastSyncTime || 'Chưa thực hiện') + '</b>';
+        }
+      }
+    }
+
+    async function pushToCloud(silent) {
+      const endpoint = getEndpoint();
+      if (!endpoint || isSyncing) return;
+      isSyncing = true;
+      setSyncBadge('syncing', '🔄 Đang đồng bộ...');
+      try {
+        const payload = {
+          geckos: state.geckos,
+          updatedAt: state.updatedAt || Date.now()
+        };
+        const res = await fetch(endpoint, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const now = new Date();
+        syncCfg.lastSyncTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ' ' + todayISO();
+        saveSyncCfg();
+        setSyncBadge('ok', '☁️ Đã đồng bộ');
+        if (!silent) showToast('Đã đẩy dữ liệu lên đám mây!', 'ok');
+      } catch (e) {
+        setSyncBadge('err', '📴 Lỗi đồng bộ');
+        if (!silent) showToast('Không thể kết nối Firebase. Kiểm tra lại URL hoặc tab Rules!', 'err');
+      } finally {
+        isSyncing = false;
+      }
+    }
+
+    async function pullFromCloud(forceOverwrite) {
+      const endpoint = getEndpoint();
+      if (!endpoint || isSyncing) return;
+      isSyncing = true;
+      setSyncBadge('syncing', '🔄 Đang tải...');
+      try {
+        const res = await fetch(endpoint);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const remote = await res.json();
+
+        const now = new Date();
+        const timeLabel = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ' ' + todayISO();
+
+        if (!remote || !Array.isArray(remote.geckos)) {
+          isSyncing = false;
+          if (state.geckos.length > 0) {
+            await pushToCloud(true);
+          } else {
+            syncCfg.lastSyncTime = timeLabel;
+            saveSyncCfg();
+            setSyncBadge('ok', '☁️ Đã đồng bộ');
+          }
+          return;
+        }
+
+        const remoteUpdated = remote.updatedAt || 0;
+        const localUpdated = state.updatedAt || 0;
+
+        if (forceOverwrite || state.geckos.length === 0 || remoteUpdated > localUpdated) {
+          state.geckos = remote.geckos;
+          state.updatedAt = remoteUpdated || Date.now();
+          if (!state.geckos.some(function (g) { return g.id === state.activeId; })) {
+            state.activeId = state.geckos.length ? state.geckos[0].id : null;
+          }
+          saveState(true);
+          renderAll();
+          syncCfg.lastSyncTime = timeLabel;
+          saveSyncCfg();
+          setSyncBadge('ok', '☁️ Đã đồng bộ');
+          if (forceOverwrite) showToast('Đã tải dữ liệu mới nhất từ đám mây!', 'ok');
+        } else if (localUpdated > remoteUpdated) {
+          isSyncing = false;
+          await pushToCloud(true);
+        } else {
+          syncCfg.lastSyncTime = timeLabel;
+          saveSyncCfg();
+          setSyncBadge('ok', '☁️ Đã đồng bộ');
+          if (forceOverwrite) showToast('Dữ liệu trên hai máy đã khớp nhau!', 'ok');
+        }
+      } catch (e) {
+        setSyncBadge('err', '📴 Lỗi đồng bộ');
+        if (forceOverwrite) showToast('Không thể tải dữ liệu từ Firebase. Kiểm tra lại URL hoặc Rules!', 'err');
+      } finally {
+        isSyncing = false;
+      }
+    }
+
+    function manualPush() {
+      if (!getEndpoint()) { openSyncModal(); return; }
+      pushToCloud(false);
+    }
+
+    function manualPull() {
+      if (!getEndpoint()) { openSyncModal(); return; }
+      pullFromCloud(true);
+    }
+
+    function openSyncModal() {
+      document.getElementById('inpFirebaseUrl').value = syncCfg.url || '';
+      document.getElementById('inpSyncCode').value = syncCfg.code || '';
+      document.getElementById('btnDisconnectSync').style.display = (syncCfg.url && syncCfg.code) ? 'block' : 'none';
+      document.getElementById('syncModal').classList.add('open');
+    }
+
+    function closeSyncModal() {
+      document.getElementById('syncModal').classList.remove('open');
+    }
+
+    async function saveSyncConfig() {
+      const url = document.getElementById('inpFirebaseUrl').value.trim();
+      const code = document.getElementById('inpSyncCode').value.trim();
+      if (!url || !url.startsWith('http')) {
+        showToast('Vui lòng nhập đúng đường dẫn Firebase (bắt đầu bằng https://)', 'err');
+        return;
+      }
+      if (!code) {
+        showToast('Vui lòng nhập mã đồng bộ bí mật!', 'err');
+        return;
+      }
+      syncCfg.url = url;
+      syncCfg.code = code;
+      saveSyncCfg();
+      closeSyncModal();
+      await pullFromCloud(false);
+      showToast('Đã lưu cấu hình đồng bộ!', 'ok');
+    }
+
+    function disconnectSync() {
+      if (!confirm('Ngắt kết nối đồng bộ Firebase trên thiết bị này?')) return;
+      syncCfg = { url: '', code: '', lastSyncTime: '' };
+      saveSyncCfg();
+      setSyncBadge('', '☁️ Chưa đồng bộ');
+      closeSyncModal();
+      showToast('Đã ngắt kết nối đồng bộ');
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        if (getEndpoint()) pullFromCloud(false);
+        fetchLocalWeather(false);
+      }
+    });
+    setInterval(function () {
+      if (document.visibilityState === 'visible' && getEndpoint()) {
+        pullFromCloud(false);
+      }
+    }, 15000);
+    setInterval(function () {
+      if (document.visibilityState === 'visible') {
+        fetchLocalWeather(false);
+      }
+    }, 60000);
+
+    function showToast(msg, type) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'toast show ' + (type || '');
+      clearTimeout(el._timer);
+      el._timer = setTimeout(function () { el.className = 'toast'; }, 3200);
+    }
+
+    function getActivePet() {
+      return state.geckos.find(function (g) { return g.id === state.activeId; }) || null;
+    }
+
+    function todayISO() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function formatVNDate(iso) {
+      if (!iso || iso.indexOf('-') === -1) return iso || '--/--/----';
+      const parts = iso.split('-');
+      return parts[2] + '/' + parts[1] + '/' + parts[0];
+    }
+
+    function isStandaloneMode() {
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+
+    function switchTab(tabName, preserveEdit) {
+      document.querySelectorAll('.tab-pane').forEach(function (el) { el.classList.remove('active'); });
+      document.querySelectorAll('.nav-btn, .side-nav-btn').forEach(function (el) { el.classList.remove('active'); });
+      document.getElementById('tab-' + tabName).classList.add('active');
+      document.querySelectorAll('.nav-btn[data-tab="' + tabName + '"], .side-nav-btn[data-tab="' + tabName + '"]').forEach(function (el) {
+        el.classList.add('active');
+      });
+
+      if (tabName === 'log' && !preserveEdit) {
+        initLogForm();
+      }
+      if (tabName === 'weight') {
+        renderFeedingChart();
+        renderWeightChart();
+      }
+    }
+
+    function openPetModal(isEdit) {
+      const modal = document.getElementById('petModal');
+      if (isEdit) {
+        const pet = getActivePet();
+        if (!pet) return;
+        editingPetId = pet.id;
+        document.getElementById('modalTitle').textContent = 'Sửa hồ sơ ' + pet.name;
+        document.getElementById('petName').value = pet.name;
+        document.getElementById('petMorph').value = pet.morph || '';
+        document.getElementById('petGender').value = pet.gender || 'Chưa rõ (Baby)';
+        document.getElementById('petAge').value = pet.age || '';
+        document.getElementById('petLength').value = pet.length || '';
+        document.getElementById('petCycle').value = pet.cycleDays || 2;
+        document.getElementById('petFeedTime').value = pet.feedTime || '19:00';
+        document.getElementById('petNote').value = pet.note || '';
+      } else {
+        editingPetId = null;
+        document.getElementById('modalTitle').textContent = 'Thêm hồ sơ bé Gecko';
+        document.getElementById('petName').value = '';
+        document.getElementById('petMorph').value = '';
+        document.getElementById('petGender').value = 'Chưa rõ (Baby)';
+        document.getElementById('petAge').value = '';
+        document.getElementById('petLength').value = '';
+        document.getElementById('petCycle').value = 2;
+        document.getElementById('petFeedTime').value = '19:00';
+        document.getElementById('petNote').value = '';
+      }
+      modal.classList.add('open');
+    }
+
+    function closePetModal() {
+      document.getElementById('petModal').classList.remove('open');
+    }
+
+    function savePet() {
+      const name = document.getElementById('petName').value.trim();
+      if (!name) {
+        showToast('Vui lòng nhập tên của bé!', 'err');
+        return;
+      }
+      const morph = document.getElementById('petMorph').value.trim() || 'Normal';
+      const gender = document.getElementById('petGender').value;
+      const age = document.getElementById('petAge').value.trim();
+      const length = document.getElementById('petLength').value.trim();
+      const cycleDays = Math.max(1, parseInt(document.getElementById('petCycle').value, 10) || 2);
+      const feedTime = document.getElementById('petFeedTime').value || '19:00';
+      const note = document.getElementById('petNote').value.trim();
+
+      if (editingPetId) {
+        const pet = state.geckos.find(function (g) { return g.id === editingPetId; });
+        if (pet) {
+          pet.name = name;
+          pet.morph = morph;
+          pet.gender = gender;
+          pet.age = age;
+          pet.length = length;
+          pet.cycleDays = cycleDays;
+          pet.feedTime = feedTime;
+          pet.note = note;
+        }
+        showToast('Đã cập nhật hồ sơ!', 'ok');
+      } else {
+        const newPet = {
+          id: 'gecko_' + Date.now(),
+          name: name,
+          morph: morph,
+          gender: gender,
+          age: age,
+          length: length,
+          cycleDays: cycleDays,
+          feedTime: feedTime,
+          note: note,
+          logs: []
+        };
+        state.geckos.push(newPet);
+        state.activeId = newPet.id;
+        saveState(false);
+        closePetModal();
+        renderAll();
+        switchTab('overview');
+        showToast('Đã tạo hồ sơ cho ' + name + '!', 'ok');
+        return;
+      }
+      saveState(false);
+      closePetModal();
+      renderAll();
+    }
+
+    function deleteCurrentPet() {
+      const pet = getActivePet();
+      if (!pet) return;
+      if (!confirm('Xóa toàn bộ hồ sơ và dữ liệu của bé "' + pet.name + '"?')) return;
+      state.geckos = state.geckos.filter(function (g) { return g.id !== pet.id; });
+      state.activeId = state.geckos.length ? state.geckos[0].id : null;
+      saveState(false);
+      renderAll();
+      if (state.geckos.length) switchTab('geckos');
+      showToast('Đã xóa hồ sơ');
+    }
+
+    function getNextFeedingInfo(pet) {
+      const feedTime = pet.feedTime || '19:00';
+      const cycle = Math.max(1, Number(pet.cycleDays) || 2);
+      const mealLogs = (pet.logs || []).slice()
+        .filter(function (l) { return Array.isArray(l.feeders) && l.feeders.some(function (f) { return f.count > 0; }); })
+        .sort(function (a, b) { return (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')); });
+
+      if (!mealLogs.length) {
+        return {
+          isoDate: todayISO(),
+          time: feedTime,
+          subText: 'Chưa có bữa ăn nào được ghi nhận',
+          badgeText: '🍽️ Chưa có bữa ăn',
+          badgeClass: 'st-none'
+        };
+      }
+
+      const lastMeal = mealLogs[0];
+      const parts = lastMeal.date.split('-').map(Number);
+      const nextDateObj = new Date(parts[0], parts[1] - 1, parts[2] + cycle);
+      const nextISO = nextDateObj.getFullYear() + '-' + String(nextDateObj.getMonth() + 1).padStart(2, '0') + '-' + String(nextDateObj.getDate()).padStart(2, '0');
+
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const diffDays = Math.round((nextDateObj - todayStart) / 86400000);
+
+      let badgeText = '';
+      let badgeClass = 'st-ok';
+      if (diffDays < 0) {
+        badgeText = '⚠️ Quá lịch ' + Math.abs(diffDays) + ' ngày';
+        badgeClass = 'st-late';
+      } else if (diffDays === 0) {
+        badgeText = '🔔 Đến lịch hôm nay lúc ' + feedTime;
+        badgeClass = 'st-due';
+      } else {
+        badgeText = '⏳ Còn ' + diffDays + ' ngày nữa';
+        badgeClass = 'st-ok';
+      }
+
+      return {
+        isoDate: nextISO,
+        time: feedTime,
+        subText: 'Bữa gần nhất: ' + formatVNDate(lastMeal.date) + ' lúc ' + (lastMeal.time || feedTime),
+        badgeText: badgeText,
+        badgeClass: badgeClass
+      };
+    }
+
+    async function toggleNotifications() {
+      if (!('Notification' in window)) {
+        showToast('Hãy thêm app ra Màn hình chính trước để bật thông báo!', 'err');
+        return;
+      }
+      if (Notification.permission === 'granted') {
+        state.notifEnabled = !state.notifEnabled;
+        saveState(true);
+        updateNotifUI();
+        showToast(state.notifEnabled ? 'Đã bật nhắc giờ cho ăn!' : 'Đã tắt nhắc giờ cho ăn');
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      if (perm === 'granted') {
+        state.notifEnabled = true;
+        saveState(true);
+        updateNotifUI();
+        showToast('Đã cấp quyền thông báo thành công!', 'ok');
+      } else {
+        showToast('Bạn chưa cấp quyền thông báo. Hãy bật trong Cài đặt iPhone.', 'err');
+      }
+    }
+
+    async function sendTestNotification() {
+      const pet = getActivePet();
+      const title = pet ? '🦎 Đến giờ cho ' + pet.name + ' ăn!' : '🦎 Gecko Care Tracker';
+      const body = pet ? 'Khẩu phần định kỳ lúc ' + (pet.feedTime || '19:00') + ' (' + pet.morph + ').' : 'Thông báo hoạt động tốt!';
+
+      if (!('Notification' in window)) {
+        showToast('Hãy mở app từ Màn hình chính để dùng thông báo!', 'err');
+        return;
+      }
+      if (Notification.permission !== 'granted') {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          showToast('Vui lòng cho phép thông báo để thử tính năng này.', 'err');
+          return;
+        }
+        state.notifEnabled = true;
+        saveState(true);
+        updateNotifUI();
+      }
+      if (swReg && swReg.showNotification) {
+        swReg.showNotification(title, { body: body, icon: './icon.svg', tag: 'gecko-test' });
+      } else {
+        new Notification(title, { body: body, icon: './icon.svg' });
+      }
+      showToast('Đã gửi thông báo thử!', 'ok');
+    }
+
+    function updateNotifUI() {
+      const btn = document.getElementById('btnNotifToggle');
+      const hint = document.getElementById('iosHint');
+      const granted = 'Notification' in window && Notification.permission === 'granted' && state.notifEnabled;
+
+      if (granted) {
+        btn.textContent = '✅ Đang bật thông báo giờ ăn (Nhấn để tắt)';
+        btn.style.background = '#16A34A';
+      } else {
+        btn.textContent = '🔔 Bật thông báo giờ cho ăn';
+        btn.style.background = '#EA580C';
+      }
+
+      if (isStandaloneMode()) {
+        hint.innerHTML = '✅ <b>Đang chạy ở chế độ App độc lập.</b> Bạn có thể bật thông báo trực tiếp ở nút trên hoặc bấm <b>Thêm vào Lịch (.ics)</b> để iPhone tự động đổ chuông lặp lại theo chu kỳ ngay cả khi tắt hẳn app.';
+      } else {
+        hint.innerHTML = '💡 <b>Mẹo cài App độc lập trên iPhone:</b> Bấm nút <b>Chia sẻ</b> (ô vuông có mũi tên lên ở dưới Safari) → chọn <b>Thêm vào Màn hình chính</b>.';
+      }
+    }
+
+    setInterval(function () {
+      if (!state.notifEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+      const now = new Date();
+      const curDate = todayISO();
+      const curTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+      state.geckos.forEach(function (pet) {
+        const info = getNextFeedingInfo(pet);
+        const key = pet.id + '_' + curDate + '_' + curTime;
+        if (info.isoDate === curDate && info.time === curTime && lastNotifiedKey !== key) {
+          lastNotifiedKey = key;
+          const title = '🦎 Đến giờ cho ' + pet.name + ' ăn (' + curTime + ')';
+          const body = 'Chuẩn bị mồi và khoáng chất cho ' + pet.name + ' (' + pet.morph + ').';
+          if (swReg && swReg.showNotification) {
+            swReg.showNotification(title, { body: body, icon: './icon.svg', tag: key });
+          } else {
+            new Notification(title, { body: body });
+          }
+        }
+      });
+    }, 30000);
+
+    function downloadICS() {
+      const pet = getActivePet();
+      if (!pet) return;
+      const info = getNextFeedingInfo(pet);
+      const cycle = Math.max(1, Number(pet.cycleDays) || 2);
+      const dtStart = info.isoDate.replace(/-/g, '') + 'T' + info.time.replace(':', '') + '00';
+      const parts = info.time.split(':').map(Number);
+      const endMin = (parts[1] + 15) % 60;
+      const endHour = (parts[0] + Math.floor((parts[1] + 15) / 60)) % 24;
+      const dtEnd = info.isoDate.replace(/-/g, '') + 'T' + String(endHour).padStart(2, '0') + String(endMin).padStart(2, '0') + '00';
+
+      const ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Gecko Care Tracker//VI',
+        'BEGIN:VEVENT',
+        'UID:gecko-' + pet.id + '-' + Date.now() + '@geckocare',
+        'DTSTAMP:' + dtStart,
+        'DTSTART:' + dtStart,
+        'DTEND:' + dtEnd,
+        'RRULE:FREQ=DAILY;INTERVAL=' + cycle,
+        'SUMMARY:🦎 Cho ' + pet.name + ' ăn (' + pet.morph + ')',
+        'DESCRIPTION:Lịch cho ' + pet.name + ' ăn định kỳ mỗi ' + cycle + ' ngày lúc ' + info.time + '.',
+        'BEGIN:VALARM',
+        'TRIGGER:PT0M',
+        'ACTION:DISPLAY',
+        'DESCRIPTION:Đến giờ cho ' + pet.name + ' ăn!',
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR'
+      ].join('\r\n');
+
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Lich_cho_' + pet.name + '_an.ics';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Đã tạo lịch nhắc lặp định kỳ!', 'ok');
+    }
+
+    function initLogForm() {
+      editingLogId = null;
+      const pet = getActivePet();
+      document.getElementById('logFormTitle').textContent = '📝 Ghi nhận bữa ăn, nhiệt độ & thể trạng';
+      document.getElementById('btnSaveLog').textContent = '💾 Lưu nhật ký';
+      document.getElementById('btnCancelEditLog').style.display = 'none';
+
+      document.getElementById('logDate').value = todayISO();
+      document.getElementById('logTime').value = (pet && pet.feedTime) || '19:00';
+      document.getElementById('logWarmTemp').value = '';
+      document.getElementById('logCoolTemp').value = '';
+      document.getElementById('logWeight').value = '';
+      document.getElementById('logNotes').value = '';
+      document.getElementById('logPoop').value = 'Chưa đi phân';
+      document.getElementById('logStatus').value = 'Bình thường';
+
+      const list = document.getElementById('feederList');
+      list.innerHTML = '';
+      addFeederRow('Gián Dubia', 2);
+
+      document.querySelectorAll('#suppChips .chip').forEach(function (c) {
+        c.classList.toggle('selected', c.dataset.val === 'Không rắc');
+      });
+    }
+
+    function editLog(logId) {
+      const pet = getActivePet();
+      if (!pet) return;
+      const log = (pet.logs || []).find(function (l) { return l.id === logId; });
+      if (!log) return;
+
+      editingLogId = log.id;
+      switchTab('log', true);
+
+      document.getElementById('logFormTitle').textContent = '✏️ Chỉnh sửa nhật ký (' + formatVNDate(log.date) + ')';
+      document.getElementById('btnSaveLog').textContent = '💾 Cập nhật nhật ký';
+      document.getElementById('btnCancelEditLog').style.display = 'block';
+
+      document.getElementById('logDate').value = log.date || todayISO();
+      document.getElementById('logTime').value = log.time || (pet.feedTime || '19:00');
+      document.getElementById('logWarmTemp').value = (typeof log.warmTemp === 'number' && !isNaN(log.warmTemp)) ? log.warmTemp : '';
+      document.getElementById('logCoolTemp').value = (typeof log.coolTemp === 'number' && !isNaN(log.coolTemp)) ? log.coolTemp : '';
+      document.getElementById('logWeight').value = (typeof log.weight === 'number' && !isNaN(log.weight)) ? log.weight : '';
+      document.getElementById('logStatus').value = log.status || 'Bình thường';
+      document.getElementById('logPoop').value = log.poop || 'Chưa đi phân';
+      document.getElementById('logNotes').value = log.notes || '';
+
+      const list = document.getElementById('feederList');
+      list.innerHTML = '';
+      if (Array.isArray(log.feeders) && log.feeders.length > 0) {
+        log.feeders.forEach(function (f) {
+          addFeederRow(f.type || 'Gián Dubia', typeof f.count === 'number' ? f.count : 1);
+        });
+      } else {
+        addFeederRow('Không cho ăn', 0);
+      }
+
+      const supps = Array.isArray(log.supplements) && log.supplements.length ? log.supplements : ['Không rắc'];
+      document.querySelectorAll('#suppChips .chip').forEach(function (c) {
+        c.classList.toggle('selected', supps.indexOf(c.dataset.val) !== -1);
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast('Đang sửa bản ghi ngày ' + formatVNDate(log.date));
+    }
+
+    function cancelEditLog() {
+      initLogForm();
+      showToast('Đã hủy chỉnh sửa');
+    }
+
+    function addFeederRow(defaultType, defaultCount) {
+      const t = defaultType || 'Dế';
+      const cnt = typeof defaultCount === 'number' ? defaultCount : 1;
+      const list = document.getElementById('feederList');
+      const row = document.createElement('div');
+      row.className = 'feeder-row';
+      row.innerHTML =
+        '<select class="f-type">' +
+          '<option value="Gián Dubia"' + (t === 'Gián Dubia' ? ' selected' : '') + '>Gián Dubia</option>' +
+          '<option value="Dế"' + (t === 'Dế' ? ' selected' : '') + '>Dế</option>' +
+          '<option value="Sâu quy (Mealworm)"' + (t === 'Sâu quy (Mealworm)' ? ' selected' : '') + '>Sâu quy (Mealworm)</option>' +
+          '<option value="Sâu Superworm"' + (t === 'Sâu Superworm' ? ' selected' : '') + '>Sâu Superworm</option>' +
+          '<option value="Không cho ăn"' + (t === 'Không cho ăn' ? ' selected' : '') + '>Không cho ăn</option>' +
+        '</select>' +
+        '<div class="qty-box">' +
+          '<button type="button" class="qty-btn" onclick="stepQty(this, -1)">−</button>' +
+          '<input type="number" class="qty-input f-count" min="0" max="50" value="' + cnt + '">' +
+          '<button type="button" class="qty-btn" onclick="stepQty(this, 1)">+</button>' +
+        '</div>' +
+        '<button type="button" class="btn-del-row" title="Xóa dòng" onclick="removeFeederRow(this)">✕</button>';
+      list.appendChild(row);
+    }
+
+    function stepQty(btn, delta) {
+      const inp = btn.parentElement.querySelector('.f-count');
+      inp.value = Math.max(0, (parseInt(inp.value, 10) || 0) + delta);
+    }
+
+    function removeFeederRow(btn) {
+      const list = document.getElementById('feederList');
+      if (list.children.length > 1) {
+        btn.parentElement.remove();
+      } else {
+        btn.parentElement.querySelector('.f-count').value = 0;
+      }
+    }
+
+    function toggleSupp(btn) {
+      const val = btn.dataset.val;
+      const chips = document.querySelectorAll('#suppChips .chip');
+      if (val === 'Không rắc') {
+        chips.forEach(function (c) { c.classList.remove('selected'); });
+        btn.classList.add('selected');
+      } else {
+        document.querySelector('#suppChips .chip[data-val="Không rắc"]').classList.remove('selected');
+        btn.classList.toggle('selected');
+        const anySelected = Array.prototype.some.call(chips, function (c) { return c.classList.contains('selected'); });
+        if (!anySelected) {
+          document.querySelector('#suppChips .chip[data-val="Không rắc"]').classList.add('selected');
+        }
+      }
+    }
+
+    function saveLog() {
+      const pet = getActivePet();
+      if (!pet) return;
+
+      const date = document.getElementById('logDate').value || todayISO();
+      const time = document.getElementById('logTime').value || '19:00';
+      const warmRaw = document.getElementById('logWarmTemp').value.trim();
+      const coolRaw = document.getElementById('logCoolTemp').value.trim();
+      const warmTemp = warmRaw !== '' ? Math.round(parseFloat(warmRaw) * 10) / 10 : null;
+      const coolTemp = coolRaw !== '' ? Math.round(parseFloat(coolRaw) * 10) / 10 : null;
+      const weightRaw = document.getElementById('logWeight').value.trim();
+      const weight = weightRaw ? parseFloat(weightRaw) : null;
+
+      const feeders = [];
+      document.querySelectorAll('#feederList .feeder-row').forEach(function (row) {
+        const type = row.querySelector('.f-type').value;
+        const count = Math.max(0, parseInt(row.querySelector('.f-count').value, 10) || 0);
+        if (type !== 'Không cho ăn' && count > 0) {
+          feeders.push({ type: type, count: count });
+        }
+      });
+
+      const supplements = Array.prototype.map.call(
+        document.querySelectorAll('#suppChips .chip.selected'),
+        function (c) { return c.dataset.val; }
+      );
+
+      const logData = {
+        id: editingLogId || ('log_' + Date.now()),
+        date: date,
+        time: time,
+        warmTemp: (typeof warmTemp === 'number' && !isNaN(warmTemp) && warmTemp > 0) ? warmTemp : null,
+        coolTemp: (typeof coolTemp === 'number' && !isNaN(coolTemp) && coolTemp > 0) ? coolTemp : null,
+        feeders: feeders,
+        supplements: supplements.length ? supplements : ['Không rắc'],
+        weight: weight && weight > 0 ? weight : null,
+        poop: document.getElementById('logPoop').value,
+        status: document.getElementById('logStatus').value,
+        notes: document.getElementById('logNotes').value.trim()
+      };
+
+      pet.logs = pet.logs || [];
+      let wasEdited = false;
+      if (editingLogId) {
+        const idx = pet.logs.findIndex(function (l) { return l.id === editingLogId; });
+        if (idx !== -1) {
+          pet.logs[idx] = logData;
+          wasEdited = true;
+        } else {
+          pet.logs.push(logData);
+        }
+      } else {
+        pet.logs.push(logData);
+      }
+
+      saveState(false);
+      initLogForm();
+      renderAll();
+      switchTab('overview');
+
+      if (logData.warmTemp && (logData.warmTemp < 29 || logData.warmTemp > 33)) {
+        showToast((wasEdited ? 'Đã cập nhật! ' : 'Đã lưu! ') + 'Lưu ý vùng nóng ' + logData.warmTemp + '°C đang lệch ngưỡng 30–32°C.', 'err');
+      } else if (wasEdited) {
+        showToast('Đã cập nhật bản ghi nhật ký!', 'ok');
+      } else {
+        showToast('Đã lưu nhật ký cho ' + pet.name + '!', 'ok');
+      }
+    }
+
+    function deleteLog(logId) {
+      const pet = getActivePet();
+      if (!pet) return;
+      if (!confirm('Xóa bản ghi nhật ký này?')) return;
+      pet.logs = (pet.logs || []).filter(function (l) { return l.id !== logId; });
+      if (editingLogId === logId) {
+        initLogForm();
+      }
+      saveState(false);
+      renderAll();
+      showToast('Đã xóa bản ghi');
+    }
+
+    function renderLogItemHTML(log) {
+      const foodText = log.feeders && log.feeders.length
+        ? log.feeders.map(function (f) { return f.count + ' ' + f.type; }).join(' + ')
+        : 'Nhịn ăn (0 mồi)';
+      const suppText = (log.supplements || []).join(', ');
+      const weightBadge = log.weight ? ' • ⚖️ <b>' + log.weight + 'g</b>' : '';
+
+      const hasWarm = typeof log.warmTemp === 'number' && !isNaN(log.warmTemp);
+      const hasCool = typeof log.coolTemp === 'number' && !isNaN(log.coolTemp);
+      let tempLine = '';
+      if (hasWarm || hasCool) {
+        const isWarn = (hasWarm && (log.warmTemp < 29 || log.warmTemp > 33)) || (hasCool && (log.coolTemp < 21 || log.coolTemp > 28));
+        const tParts = [];
+        if (hasWarm) tParts.push('🔥 Nóng: ' + log.warmTemp + '°C');
+        if (hasCool) tParts.push('❄️ Mát: ' + log.coolTemp + '°C');
+        tempLine = '<div><span class="temp-pill-inline' + (isWarn ? ' warn' : '') + '">' + tParts.join('  |  ') + '</span></div>';
+      }
+
+      const noteLine = log.notes ? '<div class="log-sub" style="color:#0F172A;margin-top:2px;">📝 ' + escapeHTML(log.notes) + '</div>' : '';
+
+      return (
+        '<div class="log-item">' +
+          '<div>' +
+            '<div class="log-date">' + formatVNDate(log.date) + ' • ' + (log.time || '') + '</div>' +
+            '<div class="log-main">' + escapeHTML(foodText) + weightBadge + '</div>' +
+            tempLine +
+            '<div class="log-sub">💊 ' + escapeHTML(suppText) + '  |  💩 ' + escapeHTML(log.poop) + '</div>' +
+            '<div class="log-sub">🦎 ' + escapeHTML(log.status) + '</div>' +
+            noteLine +
+          '</div>' +
+          '<div class="log-actions">' +
+            '<button type="button" class="btn-edit-row" onclick="editLog(\'' + log.id + '\')" title="Sửa">✏️</button>' +
+            '<button type="button" class="btn-del-row" onclick="deleteLog(\'' + log.id + '\')" title="Xóa">🗑️</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    function setFeedingChartMode(mode) {
+      feedingChartMode = mode === 'line' ? 'line' : 'bar';
+      localStorage.setItem('gecko_feeding_chart_mode', feedingChartMode);
+      renderFeedingChart();
+    }
+
+    function renderFeedingChart() {
+      const pet = getActivePet();
+      const box = document.getElementById('feedingChartContainer');
+      const tip = document.getElementById('feedingChartTip');
+      const avgBadge = document.getElementById('feedingAvgBadge');
+      const legendBox = document.getElementById('feedingLegend');
+      const btnBar = document.getElementById('btnFeedModeBar');
+      const btnLine = document.getElementById('btnFeedModeLine');
+      if (!pet || !box) return;
+
+      if (btnBar) btnBar.classList.toggle('active', feedingChartMode === 'bar');
+      if (btnLine) btnLine.classList.toggle('active', feedingChartMode === 'line');
+      if (legendBox) {
+        legendBox.innerHTML = feedingChartMode === 'bar'
+          ? '<span class="legend-item"><span class="legend-dot" style="background:#EA580C;"></span>Dubia</span>' +
+            '<span class="legend-item"><span class="legend-dot" style="background:#0284C7;"></span>Dế</span>' +
+            '<span class="legend-item"><span class="legend-dot" style="background:#16A34A;"></span>Sâu quy</span>' +
+            '<span class="legend-item"><span class="legend-dot" style="background:#8B5CF6;"></span>Superworm</span>'
+          : '<span class="legend-item"><span class="legend-dot" style="background:#16A34A; border-radius:99px;"></span>Tổng số mồi (con/ngày)</span>';
+      }
+
+      const dayMap = {};
+      (pet.logs || []).forEach(function (l) {
+        if (!l.date) return;
+        if (!dayMap[l.date]) {
+          dayMap[l.date] = { date: l.date, total: 0, dubia: 0, cricket: 0, mealworm: 0, superworm: 0, other: 0, statusList: [] };
+        }
+        if (l.status && l.status !== 'Bình thường') {
+          dayMap[l.date].statusList.push(l.status);
+        }
+        (l.feeders || []).forEach(function (f) {
+          const c = Number(f.count) || 0;
+          if (c <= 0) return;
+          dayMap[l.date].total += c;
+          if (f.type === 'Gián Dubia') dayMap[l.date].dubia += c;
+          else if (f.type === 'Dế') dayMap[l.date].cricket += c;
+          else if (f.type === 'Sâu quy (Mealworm)') dayMap[l.date].mealworm += c;
+          else if (f.type === 'Sâu Superworm') dayMap[l.date].superworm += c;
+          else dayMap[l.date].other += c;
+        });
+      });
+
+      const days = Object.keys(dayMap).sort().slice(-12).map(function (k) { return dayMap[k]; });
+      const mealDays = days.filter(function (d) { return d.total > 0; });
+
+      if (!days.length) {
+        box.innerHTML = '<div style="text-align:center;padding:34px 12px;color:var(--muted);font-size:13px;">Chưa có dữ liệu cho ăn. Hãy ghi nhật ký bữa ăn để hiển thị biểu đồ.</div>';
+        if (tip) tip.textContent = '';
+        if (avgBadge) avgBadge.textContent = '';
+        return;
+      }
+
+      if (avgBadge) {
+        if (mealDays.length > 0) {
+          const sumAll = mealDays.reduce(function (s, d) { return s + d.total; }, 0);
+          avgBadge.textContent = 'TB: ' + (sumAll / mealDays.length).toFixed(1) + ' con/bữa';
+        } else {
+          avgBadge.textContent = '0 con';
+        }
+      }
+
+      const W = 560, H = 220, padL = 38, padR = 22, padT = 26, padB = 34;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+      const maxVal = Math.max(4, Math.max.apply(null, days.map(function (d) { return d.total; })));
+      const yMax = Math.ceil(maxVal / 2) * 2;
+
+      let gridSVG = '';
+      for (let i = 0; i <= 2; i++) {
+        const y = padT + (plotH * i) / 2;
+        const val = Math.round(yMax - (yMax * i) / 2);
+        gridSVG += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="#E2E8F0" stroke-dasharray="3 3"/>';
+        gridSVG += '<text x="' + (padL - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="#64748B">' + val + '</text>';
+      }
+
+      window._feedingDays = days;
+
+      if (feedingChartMode === 'line') {
+        const coords = days.map(function (d, idx) {
+          const x = padL + (days.length === 1 ? plotW / 2 : (plotW * idx) / (days.length - 1));
+          const y = padT + plotH - (d.total / yMax) * plotH;
+          return { x: x, y: y, d: d };
+        });
+
+        const polyline = coords.map(function (c) { return c.x + ',' + c.y; }).join(' ');
+        const areaPoints = coords.length > 1
+          ? (coords[0].x + ',' + (padT + plotH) + ' ' + polyline + ' ' + coords[coords.length - 1].x + ',' + (padT + plotH))
+          : '';
+
+        let dotsSVG = '';
+        coords.forEach(function (c, idx) {
+          const shortDate = c.d.date.slice(5).split('-').reverse().join('/');
+          const dotColor = c.d.total === 0 ? '#94A3B8' : '#16A34A';
+          dotsSVG +=
+            '<g style="cursor:pointer" onclick="showFeedingBar(' + idx + ')">' +
+              '<circle cx="' + c.x + '" cy="' + c.y + '" r="14" fill="transparent"/>' +
+              '<circle cx="' + c.x + '" cy="' + c.y + '" r="5.5" fill="' + dotColor + '" stroke="#FFFFFF" stroke-width="2"/>' +
+              '<text x="' + c.x + '" y="' + (c.y - 11) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#0F172A">' + c.d.total + '</text>' +
+              '<text x="' + c.x + '" y="' + (H - 10) + '" text-anchor="middle" font-size="10" fill="#64748B">' + shortDate + '</text>' +
+            '</g>';
+        });
+
+        box.innerHTML =
+          '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;">' +
+            gridSVG +
+            (areaPoints ? '<polygon fill="#16A34A" fill-opacity="0.10" points="' + areaPoints + '"/>' : '') +
+            (coords.length > 1 ? '<polyline fill="none" stroke="#16A34A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="' + polyline + '"/>' : '') +
+            dotsSVG +
+          '</svg>';
+        showFeedingBar(days.length - 1);
+        return;
+      }
+
+      const slotW = plotW / days.length;
+      const barW = Math.min(28, Math.max(12, slotW * 0.56));
+      let barsSVG = '';
+
+      days.forEach(function (d, idx) {
+        const cx = padL + slotW * idx + slotW / 2;
+        const bx = cx - barW / 2;
+        const shortDate = d.date.slice(5).split('-').reverse().join('/');
+        let curY = padT + plotH;
+
+        const segments = [
+          { val: d.dubia, color: '#EA580C' },
+          { val: d.cricket, color: '#0284C7' },
+          { val: d.mealworm, color: '#16A34A' },
+          { val: d.superworm + d.other, color: '#8B5CF6' }
+        ];
+
+        barsSVG += '<g style="cursor:pointer" onclick="showFeedingBar(' + idx + ')">';
+        barsSVG += '<rect x="' + (cx - slotW / 2) + '" y="' + padT + '" width="' + slotW + '" height="' + (plotH + 24) + '" fill="transparent"/>';
+
+        if (d.total === 0) {
+          barsSVG += '<rect x="' + bx + '" y="' + (curY - 3) + '" width="' + barW + '" height="3" rx="1.5" fill="#CBD5E1"/>';
+          barsSVG += '<text x="' + cx + '" y="' + (curY - 8) + '" text-anchor="middle" font-size="10" font-weight="700" fill="#94A3B8">0</text>';
+        } else {
+          segments.forEach(function (seg) {
+            if (seg.val <= 0) return;
+            const segH = (seg.val / yMax) * plotH;
+            curY -= segH;
+            barsSVG += '<rect x="' + bx + '" y="' + curY + '" width="' + barW + '" height="' + segH + '" rx="2" fill="' + seg.color + '"/>';
+          });
+          barsSVG += '<text x="' + cx + '" y="' + (curY - 6) + '" text-anchor="middle" font-size="11" font-weight="800" fill="#0F172A">' + d.total + '</text>';
+        }
+
+        barsSVG += '<text x="' + cx + '" y="' + (H - 10) + '" text-anchor="middle" font-size="10" fill="#64748B">' + shortDate + '</text>';
+        barsSVG += '</g>';
+      });
+
+      box.innerHTML =
+        '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;">' +
+          gridSVG +
+          barsSVG +
+        '</svg>';
+      showFeedingBar(days.length - 1);
+    }
+
+    function showFeedingBar(idx) {
+      const days = window._feedingDays || [];
+      const tip = document.getElementById('feedingChartTip');
+      if (!days[idx] || !tip) return;
+      const d = days[idx];
+      if (d.total === 0) {
+        const extra = d.statusList.length ? ' (' + d.statusList[0] + ')' : '';
+        tip.textContent = 'Ngày ' + formatVNDate(d.date) + ': Nhịn ăn (0 con)' + extra;
+        return;
+      }
+      const parts = [];
+      if (d.dubia > 0) parts.push(d.dubia + ' Dubia');
+      if (d.cricket > 0) parts.push(d.cricket + ' Dế');
+      if (d.mealworm > 0) parts.push(d.mealworm + ' Sâu quy');
+      if (d.superworm > 0) parts.push(d.superworm + ' Superworm');
+      if (d.other > 0) parts.push(d.other + ' mồi khác');
+      tip.textContent = 'Ngày ' + formatVNDate(d.date) + ': Tổng ' + d.total + ' con (' + parts.join(', ') + ')';
+    }
+
+    function renderWeightChart() {
+      const pet = getActivePet();
+      const box = document.getElementById('chartContainer');
+      const tip = document.getElementById('chartTip');
+      if (!pet) return;
+
+      const points = (pet.logs || []).slice()
+        .filter(function (l) { return typeof l.weight === 'number' && l.weight > 0; })
+        .sort(function (a, b) { return a.date.localeCompare(b.date); })
+        .slice(-12);
+
+      if (!points.length) {
+        box.innerHTML = '<div style="text-align:center;padding:34px 12px;color:var(--muted);font-size:13px;">Chưa có dữ liệu cân nặng. Hãy nhập cân nặng trong mục <b>Ghi nhật ký</b> để vẽ biểu đồ.</div>';
+        tip.textContent = '';
+        return;
+      }
+
+      const W = 560, H = 220, padL = 44, padR = 24, padT = 26, padB = 34;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+      const vals = points.map(function (p) { return p.weight; });
+      let minV = Math.min.apply(null, vals);
+      let maxV = Math.max.apply(null, vals);
+      if (minV === maxV) {
+        minV = Math.max(0, minV - 1);
+        maxV = maxV + 1;
+      } else {
+        const margin = (maxV - minV) * 0.2;
+        minV = Math.max(0, minV - margin);
+        maxV = maxV + margin;
+      }
+
+      let gridSVG = '';
+      for (let i = 0; i <= 2; i++) {
+        const y = padT + (plotH * i) / 2;
+        const val = (maxV - ((maxV - minV) * i) / 2).toFixed(1);
+        gridSVG += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="#E2E8F0" stroke-dasharray="3 3"/>';
+        gridSVG += '<text x="' + (padL - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="#64748B">' + val + '</text>';
+      }
+
+      const coords = points.map(function (p, idx) {
+        const x = padL + (points.length === 1 ? plotW / 2 : (plotW * idx) / (points.length - 1));
+        const y = padT + plotH - ((p.weight - minV) / (maxV - minV)) * plotH;
+        return { x: x, y: y, p: p };
+      });
+
+      const polyline = coords.map(function (c) { return c.x + ',' + c.y; }).join(' ');
+      let dotsSVG = '';
+      coords.forEach(function (c, idx) {
+        const shortDate = c.p.date.slice(5).split('-').reverse().join('/');
+        dotsSVG +=
+          '<g style="cursor:pointer" onclick="showWeightPoint(' + idx + ')">' +
+            '<circle cx="' + c.x + '" cy="' + c.y + '" r="14" fill="transparent"/>' +
+            '<circle cx="' + c.x + '" cy="' + c.y + '" r="5.5" fill="#EA580C" stroke="#FFFFFF" stroke-width="2"/>' +
+            '<text x="' + c.x + '" y="' + (c.y - 11) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#0F172A">' + c.p.weight + 'g</text>' +
+            '<text x="' + c.x + '" y="' + (H - 10) + '" text-anchor="middle" font-size="10" fill="#64748B">' + shortDate + '</text>' +
+          '</g>';
+      });
+
+      window._chartCoords = coords;
+      box.innerHTML =
+        '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;">' +
+          gridSVG +
+          (coords.length > 1 ? '<polyline fill="none" stroke="#EA580C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="' + polyline + '"/>' : '') +
+          dotsSVG +
+        '</svg>';
+      showWeightPoint(coords.length - 1);
+    }
+
+    function showWeightPoint(idx) {
+      const coords = window._chartCoords || [];
+      if (!coords[idx]) return;
+      const cur = coords[idx].p;
+      let deltaStr = '';
+      if (idx > 0) {
+        const diff = (cur.weight - coords[idx - 1].p.weight).toFixed(1);
+        deltaStr = ' (' + (diff >= 0 ? '+' : '') + diff + 'g so với lần trước)';
+      }
+      document.getElementById('chartTip').textContent = 'Ngày ' + formatVNDate(cur.date) + ': ' + cur.weight + ' gram' + deltaStr;
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'gecko_care_backup_' + todayISO() + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Đã xuất file sao lưu JSON!', 'ok');
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || !Array.isArray(data.geckos)) throw new Error('Invalid format');
+          data.geckos.forEach(function (g) {
+            g.logs = (g.logs || []).map(function (l) {
+              if (!Array.isArray(l.feeders)) {
+                l.feeders = l.feederCount > 0 ? [{ type: l.feederType || 'Gián Dubia', count: l.feederCount }] : [];
+              }
+              if (!Array.isArray(l.supplements)) {
+                l.supplements = l.supplement ? [l.supplement] : ['Không rắc'];
+              }
+              return l;
+            });
+          });
+          state = {
+            geckos: data.geckos,
+            activeId: data.geckos.length ? (data.activeId || data.geckos[0].id) : null,
+            notifEnabled: Boolean(data.notifEnabled),
+            updatedAt: Date.now()
+          };
+          saveState(false);
+          renderAll();
+          showToast('Đã khôi phục dữ liệu thành công!', 'ok');
+        } catch (err) {
+          showToast('Tệp JSON không hợp lệ!', 'err');
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    function exportCSV() {
+      const pet = getActivePet();
+      if (!pet || !(pet.logs || []).length) {
+        showToast('Chưa có dữ liệu nhật ký để xuất!', 'err');
+        return;
+      }
+      const rows = [['Tên bé', 'Morph', 'Giới tính', 'Ngày', 'Giờ', 'Nhiệt độ vùng nóng (°C)', 'Nhiệt độ vùng mát (°C)', 'Cân nặng (g)', 'Khẩu phần mồi', 'Bổ sung khoáng', 'Tình trạng phân', 'Trạng thái', 'Ghi chú']];
+      pet.logs.slice().sort(function (a, b) { return b.date.localeCompare(a.date); }).forEach(function (l) {
+        const food = (l.feeders || []).map(function (f) { return f.count + ' ' + f.type; }).join(' + ') || 'Nhịn ăn';
+        rows.push([
+          pet.name,
+          pet.morph,
+          pet.gender,
+          l.date,
+          l.time || '',
+          typeof l.warmTemp === 'number' ? l.warmTemp : '',
+          typeof l.coolTemp === 'number' ? l.coolTemp : '',
+          l.weight || '',
+          food,
+          (l.supplements || []).join(', '),
+          l.poop || '',
+          l.status || '',
+          l.notes || ''
+        ]);
+      });
+      const csvContent = '\uFEFF' + rows.map(function (r) {
+        return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
+      }).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Nhat_ky_' + pet.name + '_' + todayISO() + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Đã xuất file Excel (.csv)!', 'ok');
+    }
+
+    function renderAll() {
+      const grid = document.getElementById('geckoCardsGrid');
+      const emptyBox = document.getElementById('emptyState');
+      const appContent = document.getElementById('appContent');
+      const bottomNav = document.getElementById('bottomNav');
+      const sidebarNavWrap = document.getElementById('sidebarNavWrap');
+
+      if (getEndpoint()) {
+        setSyncBadge('ok', '☁️ Đã đồng bộ');
+      } else {
+        setSyncBadge('', '☁️ Chưa đồng bộ');
+      }
+
+      if (grid) grid.innerHTML = '';
+      if (!state.geckos.length) {
+        emptyBox.style.display = 'block';
+        appContent.style.display = 'none';
+        bottomNav.style.display = 'none';
+        if (sidebarNavWrap) sidebarNavWrap.style.display = 'none';
+        return;
+      }
+
+      if (!state.geckos.some(function (g) { return g.id === state.activeId; })) {
+        state.activeId = state.geckos[0].id;
+        saveState(true);
+      }
+
+      emptyBox.style.display = 'none';
+      appContent.style.display = 'block';
+      bottomNav.style.display = 'grid';
+      if (sidebarNavWrap) sidebarNavWrap.style.display = 'block';
+
+      state.geckos.forEach(function (g) {
+        const isActive = g.id === state.activeId;
+        const gSorted = (g.logs || []).slice().sort(function (a, b) {
+          return (b.date + (b.time || '')).localeCompare(a.date + (a.time || ''));
+        });
+        const gWeights = gSorted.filter(function (l) { return typeof l.weight === 'number' && l.weight > 0; });
+        const weightStr = gWeights.length ? (gWeights[0].weight + ' g') : 'N/A';
+        const ageStr = g.age ? escapeHTML(g.age) : 'Chưa cập nhật';
+        const lenStr = g.length ? escapeHTML(g.length) : 'N/A';
+        const genderStr = escapeHTML(g.gender || 'Chưa rõ');
+        const morphStr = escapeHTML(g.morph || 'Normal');
+
+        const card = document.createElement('div');
+        card.className = 'pet-profile-card' + (isActive ? ' active' : '');
+        card.onclick = function () {
+          state.activeId = g.id;
+          editingLogId = null;
+          saveState(true);
+          renderAll();
+          switchTab('overview');
+        };
+
+        card.innerHTML =
+          '<div class="ppc-body">' +
+            '<div class="ppc-head">' +
+              '<div class="ppc-name">' + escapeHTML(g.name) + '</div>' +
+              '<span class="ppc-open-pill">🪪 Mở thẻ</span>' +
+            '</div>' +
+            '<div class="ppc-species">Leopard gecko</div>' +
+            '<div class="ppc-grid">' +
+              '<div class="ppc-item">' +
+                '<div class="ppc-lbl">Tuổi / Ngày nở</div>' +
+                '<div class="ppc-val' + (g.age ? '' : ' muted') + '">' + ageStr + '</div>' +
+              '</div>' +
+              '<div class="ppc-item">' +
+                '<div class="ppc-lbl">Giới tính</div>' +
+                '<div class="ppc-val">' + genderStr + '</div>' +
+              '</div>' +
+              '<div class="ppc-item">' +
+                '<div class="ppc-lbl">Cân nặng</div>' +
+                '<div class="ppc-val' + (gWeights.length ? '' : ' muted') + '">' + weightStr + '</div>' +
+              '</div>' +
+              '<div class="ppc-item">' +
+                '<div class="ppc-lbl">Chiều dài</div>' +
+                '<div class="ppc-val' + (g.length ? '' : ' muted') + '">' + lenStr + '</div>' +
+              '</div>' +
+              '<div class="ppc-item full">' +
+                '<div class="ppc-lbl">Morph</div>' +
+                '<div class="ppc-val" title="' + morphStr + '">' + morphStr + '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="ppc-actions">' +
+            '<button type="button" class="ppc-act-btn" data-act="stats" title="Xem thống kê">' +
+              '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>' +
+            '</button>' +
+            '<button type="button" class="ppc-act-btn" data-act="edit" title="Sửa hồ sơ">' +
+              '<svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>' +
+            '</button>' +
+            '<button type="button" class="ppc-act-btn danger" data-act="del" title="Xóa bé">' +
+              '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>' +
+            '</button>' +
+            '<button type="button" class="ppc-act-btn" data-act="log" title="Ghi nhật ký">' +
+              '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>' +
+            '</button>' +
+          '</div>';
+
+        card.querySelectorAll('.ppc-act-btn').forEach(function (actBtn) {
+          actBtn.onclick = function (e) {
+            e.stopPropagation();
+            state.activeId = g.id;
+            editingLogId = null;
+            saveState(true);
+            renderAll();
+            const act = actBtn.dataset.act;
+            if (act === 'stats') switchTab('weight');
+            else if (act === 'edit') openPetModal(true);
+            else if (act === 'del') deleteCurrentPet();
+            else if (act === 'log') switchTab('log');
+          };
+        });
+
+        if (grid) grid.appendChild(card);
+      });
+
+      const pet = getActivePet();
+      const hintEl = document.getElementById('ovActiveHint');
+      if (hintEl) hintEl.textContent = 'Đang xem: ' + pet.name;
+      document.getElementById('ovName').textContent = pet.name;
+      document.getElementById('ovCycleBadge').textContent = '🪪 ' + (pet.cycleDays || 2) + ' ngày/lần • ' + (pet.feedTime || '19:00');
+
+      const ageEl = document.getElementById('ovSpecAge');
+      if (pet.age) {
+        ageEl.textContent = pet.age;
+        ageEl.classList.remove('muted-val');
+      } else {
+        ageEl.textContent = 'Chưa cập nhật';
+        ageEl.classList.add('muted-val');
+      }
+
+      document.getElementById('ovSpecGender').textContent = pet.gender || 'Chưa rõ';
+
+      const lenEl = document.getElementById('ovSpecLengthCycle');
+      if (pet.length) {
+        lenEl.textContent = pet.length;
+        lenEl.classList.remove('muted-val');
+      } else {
+        lenEl.textContent = 'N/A';
+        lenEl.classList.add('muted-val');
+      }
+
+      document.getElementById('ovSpecMorph').textContent = pet.morph || 'Normal';
+
+      const noteWrap = document.getElementById('ovSpecNoteWrap');
+      if (pet.note) {
+        noteWrap.style.display = 'block';
+        document.getElementById('ovSpecNote').textContent = pet.note;
+      } else {
+        noteWrap.style.display = 'none';
+      }
+
+      renderWeatherCard();
+      renderSavedAiReport(pet);
+
+      const sched = getNextFeedingInfo(pet);
+      document.getElementById('schedDateTime').innerHTML = formatVNDate(sched.isoDate) + ' • <span>' + sched.time + '</span>';
+      document.getElementById('schedSub').textContent = sched.subText;
+      const badge = document.getElementById('schedBadge');
+      badge.textContent = sched.badgeText;
+      badge.className = 'status-pill ' + sched.badgeClass;
+      updateNotifUI();
+
+      const sortedLogs = (pet.logs || []).slice().sort(function (a, b) {
+        return (b.date + (b.time || '')).localeCompare(a.date + (a.time || ''));
+      });
+
+      const weightEntries = sortedLogs.filter(function (l) { return typeof l.weight === 'number' && l.weight > 0; });
+      const ovWeightEl = document.getElementById('ovSpecWeight');
+      if (weightEntries.length) {
+        if (ovWeightEl) {
+          ovWeightEl.textContent = weightEntries[0].weight + ' g';
+          ovWeightEl.classList.remove('muted-val');
+        }
+        document.getElementById('kpiWeight').textContent = weightEntries[0].weight + ' g';
+        if (weightEntries.length > 1) {
+          const diff = (weightEntries[0].weight - weightEntries[1].weight).toFixed(1);
+          document.getElementById('kpiWeightSub').textContent = (diff >= 0 ? '+' : '') + diff + 'g so với lần trước';
+        } else {
+          document.getElementById('kpiWeightSub').textContent = 'Cân ngày ' + formatVNDate(weightEntries[0].date);
+        }
+      } else {
+        if (ovWeightEl) {
+          ovWeightEl.textContent = 'N/A';
+          ovWeightEl.classList.add('muted-val');
+        }
+        document.getElementById('kpiWeight').textContent = '-- g';
+        document.getElementById('kpiWeightSub').textContent = 'Chưa nhập số cân';
+      }
+
+      const d7 = new Date();
+      d7.setDate(d7.getDate() - 7);
+      const cutoff = d7.getFullYear() + '-' + String(d7.getMonth() + 1).padStart(2, '0') + '-' + String(d7.getDate()).padStart(2, '0');
+      const recentMeals = sortedLogs.filter(function (l) {
+        return l.date >= cutoff && Array.isArray(l.feeders) && l.feeders.length > 0;
+      });
+      const totalPrey = recentMeals.reduce(function (sum, l) {
+        return sum + l.feeders.reduce(function (s, f) { return s + (f.count || 0); }, 0);
+      }, 0);
+      document.getElementById('kpiFood').textContent = totalPrey + ' con';
+      document.getElementById('kpiFoodSub').textContent = 'Trong ' + recentMeals.length + ' bữa ăn';
+
+      const latestTempEntry = getLatestRecordedTemps(pet);
+      if (latestTempEntry) {
+        const wStr = typeof latestTempEntry.warmTemp === 'number' ? latestTempEntry.warmTemp + '°' : '--';
+        const cStr = typeof latestTempEntry.coolTemp === 'number' ? latestTempEntry.coolTemp + '°' : '--';
+        document.getElementById('kpiTemp').textContent = wStr + ' / ' + cStr + 'C';
+        document.getElementById('kpiTempSub').textContent = 'Nóng / Mát (' + formatVNDate(latestTempEntry.date) + ')';
+      } else {
+        document.getElementById('kpiTemp').textContent = '-- / --°C';
+        document.getElementById('kpiTempSub').textContent = 'Chưa đo trong chuồng';
+      }
+
+      const poopEntry = sortedLogs.find(function (l) { return l.poop && l.poop !== 'Chưa đi phân'; });
+      if (poopEntry) {
+        document.getElementById('kpiPoop').textContent = poopEntry.poop.split('(')[0].trim();
+      } else {
+        document.getElementById('kpiPoop').textContent = 'Chưa có';
+      }
+      if (sortedLogs.length) {
+        document.getElementById('kpiStatusSub').textContent = (sortedLogs[0].status || 'Bình thường') + ' (' + formatVNDate(sortedLogs[0].date) + ')';
+      } else {
+        document.getElementById('kpiStatusSub').textContent = 'Bình thường';
+      }
+
+      const emptyLogHTML = '<div style="text-align:center;padding:18px;color:var(--muted);font-size:13px;">Chưa có nhật ký nào.</div>';
+      document.getElementById('recentLogs').innerHTML = sortedLogs.slice(0, 5).map(renderLogItemHTML).join('') || emptyLogHTML;
+      document.getElementById('allLogs').innerHTML = sortedLogs.map(renderLogItemHTML).join('') || emptyLogHTML;
+
+      document.getElementById('weightLogs').innerHTML = weightEntries.length
+        ? weightEntries.map(function (w) {
+            return (
+              '<div class="log-item">' +
+                '<div>' +
+                  '<div class="log-date">' + formatVNDate(w.date) + '</div>' +
+                  '<div class="log-main">' + w.weight + ' gram</div>' +
+                '</div>' +
+              '</div>'
+            );
+          }).join('')
+        : '<div style="text-align:center;padding:18px;color:var(--muted);font-size:13px;">Chưa có dữ liệu cân nặng.</div>';
+
+      renderFeedingChart();
+      renderWeightChart();
+    }
+
+
+    /* ============================================================
+       GOOGLE GEMINI AI HEALTH ANALYSIS (WITH AUTO MODEL FALLBACK)
+       ============================================================ */
+    const AI_CFG_KEY = 'gecko_care_gemini_cfg_v1';
+    const AI_CACHE_KEY = 'gecko_care_ai_cache_v1';
+    const AI_FALLBACK_MODELS = [
+      'gemini-2.5-flash',
+      'gemini-3.8-flash',
+      'gemini-2.5-pro'
+    ];
+    let aiCfg = loadAiCfg();
+    let aiCache = loadAiCache();
+    let isAnalyzingAi = false;
+
+    function loadAiCfg() {
+      try {
+        const raw = localStorage.getItem(AI_CFG_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return {
+            apiKey: parsed.apiKey || '',
+            model: (parsed.model && parsed.model !== 'gemini-2.0-flash') ? parsed.model : 'gemini-2.5-flash'
+          };
+        }
+      } catch (e) {}
+      return { apiKey: '', model: 'gemini-2.5-flash' };
+    }
+
+    function saveAiCfgStorage() {
+      try {
+        localStorage.setItem(AI_CFG_KEY, JSON.stringify(aiCfg));
+      } catch (e) {}
+    }
+
+    function loadAiCache() {
+      try {
+        const raw = localStorage.getItem(AI_CACHE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return {};
+    }
+
+    function saveAiCacheStorage() {
+      try {
+        localStorage.setItem(AI_CACHE_KEY, JSON.stringify(aiCache));
+      } catch (e) {}
+    }
+
+    function maskApiKey(key) {
+      if (!key || key.length < 10) return '••••••••';
+      return key.slice(0, 6) + '••••••' + key.slice(-4);
+    }
+
+    function updateAiKeyUI() {
+      const detail = document.getElementById('aiKeyStatusDetail');
+      if (!detail) return;
+      if (aiCfg.apiKey) {
+        detail.innerHTML = '✅ <b>Đã lưu Gemini API Key:</b> <code>' + escapeHTML(maskApiKey(aiCfg.apiKey)) + '</code><br>🤖 Mô hình ưu tiên: <b>' + escapeHTML(aiCfg.model) + '</b>';
+      } else {
+        detail.innerHTML = 'Chưa lưu Gemini API Key trên thiết bị này.';
+      }
+    }
+
+    function openAiModal() {
+      document.getElementById('inpGeminiKey').value = aiCfg.apiKey || '';
+      document.getElementById('selGeminiModel').value = (aiCfg.model && aiCfg.model !== 'gemini-2.0-flash') ? aiCfg.model : 'gemini-2.5-flash';
+      document.getElementById('btnRemoveAiKey').style.display = aiCfg.apiKey ? 'block' : 'none';
+      document.getElementById('aiModal').classList.add('open');
+    }
+
+    function closeAiModal() {
+      document.getElementById('aiModal').classList.remove('open');
+    }
+
+    function saveAiConfig() {
+      const key = document.getElementById('inpGeminiKey').value.trim();
+      const model = document.getElementById('selGeminiModel').value || 'gemini-2.5-flash';
+      if (!key) {
+        showToast('Vui lòng nhập Google Gemini API Key!', 'err');
+        return;
+      }
+      aiCfg.apiKey = key;
+      aiCfg.model = model;
+      saveAiCfgStorage();
+      updateAiKeyUI();
+      closeAiModal();
+      showToast('Đã lưu Gemini API Key vào trình duyệt!', 'ok');
+    }
+
+    function removeAiConfig() {
+      if (!confirm('Xóa Gemini API Key khỏi trình duyệt này?')) return;
+      aiCfg = { apiKey: '', model: 'gemini-2.5-flash' };
+      saveAiCfgStorage();
+      updateAiKeyUI();
+      closeAiModal();
+      showToast('Đã xóa Gemini API Key');
+    }
+
+    function formatAiMarkdownSafe(rawText) {
+      const lines = String(rawText || '').split(/\r?\n/);
+      let htmlOut = '';
+      let inList = false;
+
+      function inlineBold(s) {
+        return escapeHTML(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+      }
+
+      lines.forEach(function (line) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          if (inList) {
+            htmlOut += '</ul>';
+            inList = false;
+          }
+          return;
+        }
+        if (/^#{1,4}\s+/.test(trimmed)) {
+          if (inList) { htmlOut += '</ul>'; inList = false; }
+          const titleText = trimmed.replace(/^#{1,4}\s+/, '');
+          htmlOut += '<h4>' + inlineBold(titleText) + '</h4>';
+        } else if (/^[-*•]\s+/.test(trimmed)) {
+          if (!inList) { htmlOut += '<ul>'; inList = true; }
+          const itemText = trimmed.replace(/^[-*•]\s+/, '');
+          htmlOut += '<li>' + inlineBold(itemText) + '</li>';
+        } else {
+          if (inList) { htmlOut += '</ul>'; inList = false; }
+          htmlOut += '<p style="margin:0 0 8px;">' + inlineBold(trimmed) + '</p>';
+        }
+      });
+
+      if (inList) htmlOut += '</ul>';
+      return htmlOut;
+    }
+
+    function renderSavedAiReport(pet) {
+      updateAiKeyUI();
+      const resBox = document.getElementById('aiResultContainer');
+      const statusLine = document.getElementById('aiStatusLine');
+      if (!pet || !resBox || !statusLine) return;
+
+      const cached = aiCache[pet.id];
+      if (cached && cached.html) {
+        statusLine.style.display = 'none';
+        resBox.style.display = 'block';
+        resBox.innerHTML =
+          '<div class="ai-result-box">' + cached.html + '</div>' +
+          '<div class="ai-meta-bar">' +
+            '<span>🤖 ' + escapeHTML(cached.model || 'Gemini') + '</span>' +
+            '<span>🕒 Phân tích lúc ' + escapeHTML(cached.time || '') + '</span>' +
+          '</div>';
+      } else {
+        statusLine.style.display = 'block';
+        resBox.style.display = 'none';
+        resBox.innerHTML = '';
+      }
+    }
+
+    function buildGeckoPromptPayload(pet) {
+      const sorted = (pet.logs || []).slice().sort(function (a, b) {
+        return (b.date + (b.time || '')).localeCompare(a.date + (a.time || ''));
+      });
+      const recent = sorted.slice(0, 20).map(function (l) {
+        const foods = (l.feeders || []).map(function (f) { return f.count + ' ' + f.type; }).join(', ') || 'Không ăn';
+        const supps = (l.supplements || []).join(', ') || 'Không rắc';
+        const tempStr = (typeof l.warmTemp === 'number' || typeof l.coolTemp === 'number')
+          ? ('Nóng: ' + (l.warmTemp ?? 'N/A') + '°C, Mát: ' + (l.coolTemp ?? 'N/A') + '°C')
+          : 'Không đo';
+        return '- Ngày ' + l.date + ' (' + (l.time || '') + '): Ăn [' + foods + '], Khoáng [' + supps + '], Cân nặng: ' + (l.weight ? l.weight + 'g' : 'Không cân') + ', Nhiệt chuồng: [' + tempStr + '], Phân: ' + (l.poop || 'Chưa rõ') + ', Trạng thái: ' + (l.status || 'Bình thường') + (l.notes ? ', Ghi chú: ' + l.notes : '');
+      });
+
+      const weatherSummary = (weatherData && typeof weatherData.temp === 'number')
+        ? ('Nhiệt độ ngoài trời tại ' + (weatherData.placeName || 'khu vực') + ': ' + weatherData.temp + '°C, độ ẩm ' + (weatherData.humidity ?? 'N/A') + '%')
+        : 'Chưa có dữ liệu thời tiết ngoài trời';
+
+      return [
+        'Bạn là chuyên gia thú y bò sát chuyên sâu về Leopard Gecko (Tắc kè da báo). Hãy phân tích dữ liệu chăm sóc thực tế dưới đây bằng tiếng Việt ngắn gọn, thực tế, dễ hiểu và đưa ra khuyến nghị hành động cụ thể cho người nuôi.',
+        '',
+        '=== HỒ SƠ BÉ GECKO ===',
+        '- Tên bé: ' + pet.name,
+        '- Morph: ' + (pet.morph || 'Normal'),
+        '- Giới tính: ' + (pet.gender || 'Chưa rõ'),
+        '- Tuổi / Ngày nở: ' + (pet.age || 'Chưa cập nhật'),
+        '- Chiều dài: ' + (pet.length || 'Chưa cập nhật'),
+        '- Chu kỳ cho ăn cài đặt: ' + (pet.cycleDays || 2) + ' ngày/lần lúc ' + (pet.feedTime || '19:00'),
+        '- Ghi chú hồ sơ: ' + (pet.note || 'Không có'),
+        '- Môi trường hiện tại: ' + weatherSummary,
+        '',
+        '=== NHẬT KÝ GẦN ĐÂY (TỐI ĐA 20 BẢN GHI MỚI NHẤT) ===',
+        recent.length ? recent.join('\n') : 'Chưa có bản ghi nhật ký nào.',
+        '',
+        '=== YÊU CẦU TRÌNH BÀY ===',
+        'Hãy chia câu trả lời thành 4 mục ngắn gọn dùng tiêu đề ### và gạch đầu dòng - :',
+        '### 1. Đánh giá tăng trưởng & Khẩu phần ăn',
+        '### 2. Cân đối Canxi & Vitamin D3',
+        '### 3. Nhiệt độ chuồng & Lột xác / Tiêu hóa',
+        '### 4. Việc cần làm trong 3 ngày tới'
+      ].join('\n');
+    }
+
+    function getModelCandidateQueue() {
+      const preferred = (aiCfg.model && aiCfg.model !== 'gemini-2.0-flash') ? aiCfg.model : 'gemini-2.5-flash';
+      const queue = [preferred];
+      AI_FALLBACK_MODELS.forEach(function (m) {
+        if (queue.indexOf(m) === -1) queue.push(m);
+      });
+      return queue;
+    }
+
+    function isRetriableModelError(status, errMsg) {
+      if (status === 503 || status === 429 || status === 500 || status === 502 || status === 504) return true;
+      return /high demand|overloaded|temporarily|unavailable|no longer available|not found|resource exhausted/i.test(errMsg || '');
+    }
+
+    async function runGeminiAnalysis() {
+      const pet = getActivePet();
+      if (!pet) return;
+
+      if (!aiCfg.apiKey) {
+        showToast('Hãy nhập Google Gemini API Key trước khi phân tích!', 'err');
+        openAiModal();
+        return;
+      }
+      if (isAnalyzingAi) return;
+
+      const btn = document.getElementById('btnRunAi');
+      const resBox = document.getElementById('aiResultContainer');
+      const statusLine = document.getElementById('aiStatusLine');
+
+      isAnalyzingAi = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Đang phân tích...';
+      }
+      if (statusLine) statusLine.style.display = 'none';
+      if (resBox) {
+        resBox.style.display = 'block';
+        resBox.innerHTML = '<div class="ai-result-box"><span class="ai-spinner"></span>AI đang đọc nhật ký của <b>' + escapeHTML(pet.name) + '</b> và tổng hợp đánh giá...</div>';
+      }
+
+      try {
+        const promptText = buildGeckoPromptPayload(pet);
+        const modelsToTry = getModelCandidateQueue();
+        let replyText = '';
+        let usedModel = modelsToTry[0];
+        let lastError = null;
+
+        for (let i = 0; i < modelsToTry.length; i++) {
+          const currentModel = modelsToTry[i];
+          usedModel = currentModel;
+
+          if (i > 0 && resBox) {
+            resBox.innerHTML =
+              '<div class="ai-result-box"><span class="ai-spinner"></span>Mô hình trước đang quá tải, đang tự động chuyển sang <b>' + escapeHTML(currentModel) + '</b>...</div>';
+          }
+
+          try {
+            const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(currentModel) + ':generateContent?key=' + encodeURIComponent(aiCfg.apiKey);
+            const response = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: promptText }] }],
+                generationConfig: {
+                  temperature: 0.4,
+                  maxOutputTokens: 1200
+                }
+              })
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+              const errMsg = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + response.status);
+              lastError = new Error(errMsg);
+              if (i < modelsToTry.length - 1 && isRetriableModelError(response.status, errMsg)) {
+                continue;
+              }
+              throw lastError;
+            }
+
+            const candidate = data && data.candidates && data.candidates[0];
+            const parts = candidate && candidate.content && candidate.content.parts;
+            const textOut = Array.isArray(parts) ? parts.map(function (p) { return p.text || ''; }).join('') : '';
+
+            if (!textOut.trim()) {
+              lastError = new Error('AI không trả về nội dung phân tích.');
+              if (i < modelsToTry.length - 1) continue;
+              throw lastError;
+            }
+
+            replyText = textOut;
+            break;
+          } catch (attemptErr) {
+            lastError = attemptErr;
+            if (i === modelsToTry.length - 1) {
+              throw lastError;
+            }
+          }
+        }
+
+        const formattedHtml = formatAiMarkdownSafe(replyText);
+        const now = new Date();
+        const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ' ' + formatVNDate(todayISO());
+
+        aiCache[pet.id] = {
+          html: formattedHtml,
+          model: usedModel,
+          time: timeStr
+        };
+        saveAiCacheStorage();
+        renderSavedAiReport(pet);
+        showToast('AI đã hoàn tất phân tích cho ' + pet.name + '!', 'ok');
+      } catch (err) {
+        if (resBox) {
+          resBox.innerHTML =
+            '<div class="ai-result-box" style="border-color:#FECACA;background:#FEF2F2;color:#991B1B;">' +
+              '<b>⚠️ Lỗi gọi Google Gemini API:</b> ' + escapeHTML(err.message || 'Không thể kết nối') +
+              '<div style="margin-top:6px;font-size:12px;">Đã thử tự động chuyển các mô hình dự phòng nhưng máy chủ Google đang bận hoặc API Key chưa hợp lệ. Bạn hãy thử bấm lại sau vài chục giây hoặc kiểm tra nút <b>🔑 API Key</b>.</div>' +
+            '</div>';
+        }
+        showToast('Lỗi phân tích AI: ' + (err.message || 'Thất bại'), 'err');
+      } finally {
+        isAnalyzingAi = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '✨ Phân tích ngay';
+        }
+      }
+    }
+
+    initLogForm();
+    renderAll();
+    fetchLocalWeather(false);
+    if (getEndpoint()) {
+      pullFromCloud(false);
+    }
+  </script>
+</body>
+</html>
