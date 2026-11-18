@@ -1766,8 +1766,8 @@
         <label for="selGeminiModel">Mô hình AI ưu tiên (tự động chuyển dự phòng nếu quá tải)</label>
         <select id="selGeminiModel">
           <option value="gemini-2.5-flash">Gemini 2.5 Flash (Nhanh, ổn định - Khuyên dùng)</option>
-          <option value="gemini-3.8-flash">Gemini 3.8 Flash (Thế hệ mới)</option>
-          <option value="gemini-2.5-pro">Gemini 2.5 Pro (Phân tích chuyên sâu)</option>
+          <option value="gemini-3-flash-preview">Gemini 3 Flash Preview (Thế hệ mới)</option>
+          <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview (Phân tích chuyên sâu)</option>
         </select>
       </div>
 
@@ -3269,7 +3269,7 @@
       });
       const csvContent = '\uFEFF' + rows.map(function (r) {
         return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
-      }).join('\n');
+      }).join('\r\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -3533,24 +3533,38 @@
        ============================================================ */
     const AI_CFG_KEY = 'gecko_care_gemini_cfg_v1';
     const AI_CACHE_KEY = 'gecko_care_ai_cache_v1';
+    const AI_VALID_MODELS = [
+      'gemini-2.5-flash',
+      'gemini-3-flash-preview',
+      'gemini-3.1-pro-preview'
+    ];
     const AI_FALLBACK_MODELS = [
       'gemini-2.5-flash',
-      'gemini-3.8-flash',
-      'gemini-2.5-pro'
+      'gemini-3-flash-preview',
+      'gemini-3.1-pro-preview'
     ];
     let aiCfg = loadAiCfg();
     let aiCache = loadAiCache();
     let isAnalyzingAi = false;
+
+    function normalizeGeminiModel(modelName) {
+      return AI_VALID_MODELS.indexOf(modelName) !== -1 ? modelName : 'gemini-2.5-flash';
+    }
 
     function loadAiCfg() {
       try {
         const raw = localStorage.getItem(AI_CFG_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          return {
+          const cleanModel = normalizeGeminiModel(parsed.model);
+          const cfg = {
             apiKey: parsed.apiKey || '',
-            model: (parsed.model && parsed.model !== 'gemini-2.0-flash') ? parsed.model : 'gemini-2.5-flash'
+            model: cleanModel
           };
+          if (parsed.model && parsed.model !== cleanModel) {
+            localStorage.setItem(AI_CFG_KEY, JSON.stringify(cfg));
+          }
+          return cfg;
         }
       } catch (e) {}
       return { apiKey: '', model: 'gemini-2.5-flash' };
@@ -3593,7 +3607,7 @@
 
     function openAiModal() {
       document.getElementById('inpGeminiKey').value = aiCfg.apiKey || '';
-      document.getElementById('selGeminiModel').value = (aiCfg.model && aiCfg.model !== 'gemini-2.0-flash') ? aiCfg.model : 'gemini-2.5-flash';
+      document.getElementById('selGeminiModel').value = normalizeGeminiModel(aiCfg.model);
       document.getElementById('btnRemoveAiKey').style.display = aiCfg.apiKey ? 'block' : 'none';
       document.getElementById('aiModal').classList.add('open');
     }
@@ -3604,7 +3618,7 @@
 
     function saveAiConfig() {
       const key = document.getElementById('inpGeminiKey').value.trim();
-      const model = document.getElementById('selGeminiModel').value || 'gemini-2.5-flash';
+      const model = normalizeGeminiModel(document.getElementById('selGeminiModel').value);
       if (!key) {
         showToast('Vui lòng nhập Google Gemini API Key!', 'err');
         return;
@@ -3728,7 +3742,7 @@
     }
 
     function getModelCandidateQueue() {
-      const preferred = (aiCfg.model && aiCfg.model !== 'gemini-2.0-flash') ? aiCfg.model : 'gemini-2.5-flash';
+      const preferred = normalizeGeminiModel(aiCfg.model);
       const queue = [preferred];
       AI_FALLBACK_MODELS.forEach(function (m) {
         if (queue.indexOf(m) === -1) queue.push(m);
@@ -3737,7 +3751,7 @@
     }
 
     function isRetriableModelError(status, errMsg) {
-      if (status === 503 || status === 429 || status === 500 || status === 502 || status === 504) return true;
+      if (status === 503 || status === 429 || status === 500 || status === 502 || status === 504 || status === 404) return true;
       return /high demand|overloaded|temporarily|unavailable|no longer available|not found|resource exhausted/i.test(errMsg || '');
     }
 
@@ -3780,7 +3794,7 @@
 
           if (i > 0 && resBox) {
             resBox.innerHTML =
-              '<div class="ai-result-box"><span class="ai-spinner"></span>Mô hình trước đang quá tải, đang tự động chuyển sang <b>' + escapeHTML(currentModel) + '</b>...</div>';
+              '<div class="ai-result-box"><span class="ai-spinner"></span>Mô hình trước đang quá tải hoặc không khả dụng, đang tự động chuyển sang <b>' + escapeHTML(currentModel) + '</b>...</div>';
           }
 
           try {
