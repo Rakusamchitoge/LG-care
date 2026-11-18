@@ -1031,99 +1031,122 @@
     }
 
     /* ============================================================
-       HỒ SƠ GECKO - STRUCTURED MINI PROFILE CARDS (NO PHOTO, NO EM1/EM2)
+       MỤC DANH SÁCH GECKO (DẠNG THẺ CHỌN ĐỂ MỞ TỔNG QUAN)
        ============================================================ */
-    .pet-bar {
-      max-width: 680px;
-      margin: 10px auto 0;
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      padding-bottom: 2px;
-    }
-    .pet-bar::-webkit-scrollbar { display: none; }
-
-    .pet-profile-card {
-      flex-shrink: 0;
-      width: 245px;
-      background: #FFFFFF;
-      border: 1.5px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      text-align: left;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-    }
-    .pet-profile-card:hover:not(.active) {
-      border-color: #CBD5E1;
-      background: #FAFAFA;
-    }
-    .pet-profile-card.active {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.15);
-    }
-    .ppc-body {
-      padding: 11px 12px 10px;
-    }
-    .ppc-head {
+    .gecko-dir-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 6px;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .gecko-dir-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0;
+      color: var(--text);
+    }
+    .gecko-dir-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .gecko-cards-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    @media (min-width: 640px) {
+      .gecko-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 1120px) {
+      .gecko-cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .pet-profile-card {
+      background: #FFFFFF;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      text-align: left;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .pet-profile-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+    .pet-profile-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.16);
+    }
+    .ppc-body {
+      padding: 15px 16px 13px;
+    }
+    .ppc-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
     }
     .ppc-name {
-      font-size: 14px;
+      font-size: 17px;
       font-weight: 800;
       text-transform: uppercase;
       color: var(--text);
       letter-spacing: 0.3px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      line-height: 1.25;
     }
-    .ppc-active-dot {
-      font-size: 10px;
+    .ppc-open-pill {
+      font-size: 11px;
       font-weight: 700;
-      padding: 2px 7px;
+      padding: 4px 10px;
       border-radius: 999px;
-      background: var(--primary-soft);
-      color: var(--primary-dark);
-      border: 1px solid #FDBA74;
+      background: var(--green-soft);
+      color: var(--green);
+      border: 1px solid #BBF7D0;
       flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
     .ppc-species {
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--muted);
-      margin-top: 1px;
+      margin-top: 2px;
     }
     .ppc-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 7px 10px;
-      margin-top: 9px;
-      padding-top: 8px;
+      gap: 10px 14px;
+      margin-top: 12px;
+      padding-top: 10px;
       border-top: 1px solid var(--border);
     }
     .ppc-item.full {
       grid-column: 1 / -1;
     }
     .ppc-lbl {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--muted);
-      line-height: 1.2;
+      margin-bottom: 2px;
     }
     .ppc-val {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--text);
-      line-height: 1.3;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      line-height: 1.35;
     }
     .ppc-val.muted {
       color: var(--muted);
@@ -1140,7 +1163,7 @@
       border: none;
       border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
-      padding: 7px 0;
+      padding: 10px 0;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1159,8 +1182,8 @@
       color: var(--red);
     }
     .ppc-act-btn svg {
-      width: 14px;
-      height: 14px;
+      width: 15px;
+      height: 15px;
       stroke: currentColor;
       fill: none;
       stroke-width: 2;
@@ -1168,20 +1191,20 @@
       stroke-linejoin: round;
     }
 
+    .bottom-nav {
+      grid-template-columns: repeat(5, 1fr);
+    }
+    .ov-back-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
     @media (min-width: 960px) {
-      .topbar {
-        width: 280px;
-      }
-      .container {
-        margin-left: 280px;
-      }
-      .pet-bar {
-        flex-direction: column;
-        overflow-x: visible;
-        gap: 10px;
-      }
-      .pet-profile-card {
-        width: 100%;
+      .ov-back-bar {
+        grid-column: 1 / -1;
+        margin-bottom: 0;
       }
     }
   </style>
@@ -1201,13 +1224,14 @@
         <button type="button" class="btn-add-pet" onclick="openPetModal(false)">+ Thêm bé</button>
       </div>
     </div>
-    <div class="sidebar-title">Hồ sơ Gecko</div>
-    <div id="petBar" class="pet-bar"></div>
 
     <div id="sidebarNavWrap" style="display:none;">
       <div class="sidebar-title">Bảng điều khiển</div>
       <nav class="sidebar-nav">
-        <button type="button" class="side-nav-btn active" data-tab="overview" onclick="switchTab('overview')">
+        <button type="button" class="side-nav-btn active" data-tab="geckos" onclick="switchTab('geckos')">
+          <span class="side-nav-ico">🦎</span><span>Danh sách Gecko</span>
+        </button>
+        <button type="button" class="side-nav-btn" data-tab="overview" onclick="switchTab('overview')">
           <span class="side-nav-ico">📊</span><span>Tổng quan</span>
         </button>
         <button type="button" class="side-nav-btn" data-tab="log" onclick="switchTab('log')">
@@ -1238,7 +1262,22 @@
     </div>
 
     <div id="appContent" style="display:none;">
-      <section id="tab-overview" class="tab-pane active">
+      <section id="tab-geckos" class="tab-pane active">
+        <div class="gecko-dir-header">
+          <div>
+            <h1 class="gecko-dir-title">🦎 Danh sách Gecko của bạn</h1>
+            <div class="gecko-dir-sub">Chạm vào thẻ của từng bé để xem tổng quan, lịch cho ăn và nhật ký</div>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openPetModal(false)">+ Thêm bé mới</button>
+        </div>
+        <div id="geckoCardsGrid" class="gecko-cards-grid"></div>
+      </section>
+
+      <section id="tab-overview" class="tab-pane">
+        <div class="ov-back-bar">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="switchTab('geckos')">← Danh sách tất cả bé Gecko</button>
+          <span id="ovActiveHint" style="font-size:12px;font-weight:700;color:var(--muted);"></span>
+        </div>
         <div class="ov-col-left">
         <div class="card profile-card-box">
           <div class="profile-card-body">
@@ -1511,7 +1550,10 @@
   <input type="file" id="importFile" accept=".json,application/json" style="display:none;" onchange="importJSON(event)">
 
   <nav id="bottomNav" class="bottom-nav" style="display:none;">
-    <button type="button" class="nav-btn active" data-tab="overview" onclick="switchTab('overview')">
+    <button type="button" class="nav-btn active" data-tab="geckos" onclick="switchTab('geckos')">
+      <span class="nav-ico">🦎</span><span>Danh sách</span>
+    </button>
+    <button type="button" class="nav-btn" data-tab="overview" onclick="switchTab('overview')">
       <span class="nav-ico">📊</span><span>Tổng quan</span>
     </button>
     <button type="button" class="nav-btn" data-tab="log" onclick="switchTab('log')">
@@ -2309,7 +2351,12 @@
         };
         state.geckos.push(newPet);
         state.activeId = newPet.id;
+        saveState(false);
+        closePetModal();
+        renderAll();
+        switchTab('overview');
         showToast('Đã tạo hồ sơ cho ' + name + '!', 'ok');
+        return;
       }
       saveState(false);
       closePetModal();
@@ -2324,6 +2371,7 @@
       state.activeId = state.geckos.length ? state.geckos[0].id : null;
       saveState(false);
       renderAll();
+      if (state.geckos.length) switchTab('geckos');
       showToast('Đã xóa hồ sơ');
     }
 
@@ -3105,7 +3153,7 @@
     }
 
     function renderAll() {
-      const bar = document.getElementById('petBar');
+      const grid = document.getElementById('geckoCardsGrid');
       const emptyBox = document.getElementById('emptyState');
       const appContent = document.getElementById('appContent');
       const bottomNav = document.getElementById('bottomNav');
@@ -3117,7 +3165,7 @@
         setSyncBadge('', '☁️ Chưa đồng bộ');
       }
 
-      bar.innerHTML = '';
+      if (grid) grid.innerHTML = '';
       if (!state.geckos.length) {
         emptyBox.style.display = 'block';
         appContent.style.display = 'none';
@@ -3151,24 +3199,23 @@
         const card = document.createElement('div');
         card.className = 'pet-profile-card' + (isActive ? ' active' : '');
         card.onclick = function () {
-          if (state.activeId !== g.id) {
-            state.activeId = g.id;
-            editingLogId = null;
-            saveState(true);
-            renderAll();
-          }
+          state.activeId = g.id;
+          editingLogId = null;
+          saveState(true);
+          renderAll();
+          switchTab('overview');
         };
 
         card.innerHTML =
           '<div class="ppc-body">' +
             '<div class="ppc-head">' +
               '<div class="ppc-name">' + escapeHTML(g.name) + '</div>' +
-              (isActive ? '<span class="ppc-active-dot">Đang chọn</span>' : '') +
+              '<span class="ppc-open-pill">🪪 Mở thẻ</span>' +
             '</div>' +
             '<div class="ppc-species">Leopard gecko</div>' +
             '<div class="ppc-grid">' +
               '<div class="ppc-item">' +
-                '<div class="ppc-lbl">Tuổi / Nở</div>' +
+                '<div class="ppc-lbl">Tuổi / Ngày nở</div>' +
                 '<div class="ppc-val' + (g.age ? '' : ' muted') + '">' + ageStr + '</div>' +
               '</div>' +
               '<div class="ppc-item">' +
@@ -3219,10 +3266,12 @@
           };
         });
 
-        bar.appendChild(card);
+        if (grid) grid.appendChild(card);
       });
 
       const pet = getActivePet();
+      const hintEl = document.getElementById('ovActiveHint');
+      if (hintEl) hintEl.textContent = 'Đang xem: ' + pet.name;
       document.getElementById('ovName').textContent = pet.name;
       document.getElementById('ovCycleBadge').textContent = '🪪 ' + (pet.cycleDays || 2) + ' ngày/lần • ' + (pet.feedTime || '19:00');
 
