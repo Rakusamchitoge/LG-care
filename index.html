@@ -1767,9 +1767,9 @@
       <div class="form-group">
         <label for="selGeminiModel">Mô hình AI sử dụng</label>
         <select id="selGeminiModel">
-          <option value="gemini-2.5-flash">Gemini 2.5 Flash (Nhanh, chuẩn xác - Khuyên dùng)</option>
+          <option value="gemini-3.8-flash">Gemini 3.8 Flash (Mới nhất, nhanh - Khuyên dùng)</option>
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash (Ổn định)</option>
           <option value="gemini-2.5-pro">Gemini 2.5 Pro (Phân tích chuyên sâu)</option>
-          <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
         </select>
       </div>
 
@@ -3546,11 +3546,11 @@
           const parsed = JSON.parse(raw);
           return {
             apiKey: parsed.apiKey || '',
-            model: parsed.model || 'gemini-2.5-flash'
+            model: (parsed.model && parsed.model !== 'gemini-2.0-flash') ? parsed.model : 'gemini-3.8-flash'
           };
         }
       } catch (e) {}
-      return { apiKey: '', model: 'gemini-2.5-flash' };
+      return { apiKey: '', model: 'gemini-3.8-flash' };
     }
 
     function saveAiCfgStorage() {
@@ -3590,7 +3590,7 @@
 
     function openAiModal() {
       document.getElementById('inpGeminiKey').value = aiCfg.apiKey || '';
-      document.getElementById('selGeminiModel').value = aiCfg.model || 'gemini-2.5-flash';
+      document.getElementById('selGeminiModel').value = (aiCfg.model && aiCfg.model !== 'gemini-2.0-flash') ? aiCfg.model : 'gemini-3.8-flash';
       document.getElementById('btnRemoveAiKey').style.display = aiCfg.apiKey ? 'block' : 'none';
       document.getElementById('aiModal').classList.add('open');
     }
@@ -3601,7 +3601,7 @@
 
     function saveAiConfig() {
       const key = document.getElementById('inpGeminiKey').value.trim();
-      const model = document.getElementById('selGeminiModel').value || 'gemini-2.5-flash';
+      const model = document.getElementById('selGeminiModel').value || 'gemini-3.8-flash';
       if (!key) {
         showToast('Vui lòng nhập Google Gemini API Key!', 'err');
         return;
@@ -3616,7 +3616,7 @@
 
     function removeAiConfig() {
       if (!confirm('Xóa Gemini API Key khỏi trình duyệt này?')) return;
-      aiCfg = { apiKey: '', model: 'gemini-2.5-flash' };
+      aiCfg = { apiKey: '', model: 'gemini-3.8-flash' };
       saveAiCfgStorage();
       updateAiKeyUI();
       closeAiModal();
@@ -3752,7 +3752,7 @@
 
       try {
         const promptText = buildGeckoPromptPayload(pet);
-        const modelName = aiCfg.model || 'gemini-2.5-flash';
+        const modelName = (aiCfg.model && aiCfg.model !== 'gemini-2.0-flash') ? aiCfg.model : 'gemini-3.8-flash';
         const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelName) + ':generateContent?key=' + encodeURIComponent(aiCfg.apiKey);
 
         const response = await fetch(endpoint, {
@@ -3770,6 +3770,13 @@
         const data = await response.json();
         if (!response.ok) {
           const errMsg = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + response.status);
+          if (/no longer available|not found/i.test(errMsg) && modelName !== 'gemini-3.8-flash') {
+            aiCfg.model = 'gemini-3.8-flash';
+            saveAiCfgStorage();
+            updateAiKeyUI();
+            isAnalyzingAi = false;
+            return runGeminiAnalysis();
+          }
           throw new Error(errMsg);
         }
 
