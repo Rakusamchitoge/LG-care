@@ -575,6 +575,7 @@
       min-height: 18px;
       text-align: center;
     }
+
     .chart-legend {
       display: flex;
       flex-wrap: wrap;
@@ -1075,7 +1076,7 @@
     function escapeHTML(str) {
       const d = document.createElement('div');
       d.textContent = String(str || '');
-      return d.innerHTML.replace(/"/g, '"');
+      return d.innerHTML.replace(/"/g, '&quot;');
     }
 
     function loadState() {
@@ -1243,6 +1244,112 @@
         '<button type="button" class="btn btn-primary btn-sm" onclick="fetchLocalWeather(true)">📍 Cho phép vị trí & Tự động cập nhật</button>';
     }
 
+    async function fetchWithTimeout(url, options, timeoutMs) {
+      const controller = new AbortController();
+      const timer = setTimeout(function () { controller.abort(); }, timeoutMs || 6500);
+      try {
+        const opts = Object.assign({}, options || {}, { signal: controller.signal });
+        return await fetch(url, opts);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function describeWttrCode(code) {
+      const c = Number(code);
+      if (c === 113) return '☀️ Trời quang nắng';
+      if (c === 116) return '⛅ Nắng nhẹ, ít mây';
+      if (c === 119 || c === 122) return '☁️ Trời nhiều mây';
+      if (c === 143 || c === 248 || c === 260) return '🌫️ Có sương mù';
+      if ([176, 263, 266, 293, 296, 353].indexOf(c) !== -1) return '🌦️ Mưa phùn nhẹ';
+      if ([299, 302, 305, 308, 356, 359].indexOf(c) !== -1) return '🌧️ Trời đang mưa';
+      if ([200, 386, 389, 392, 395].indexOf(c) !== -1) return '⛈️ Có mưa dông';
+      return '🌤️ Thời tiết hiện tại';
+    }
+
+    function describeMetNoSymbol(sym) {
+      const s = String(sym || '');
+      if (s.indexOf('clearsky') === 0) return '☀️ Trời quang nắng';
+      if (s.indexOf('fair') === 0 || s.indexOf('partlycloudy') === 0) return '⛅ Nắng nhẹ, ít mây';
+      if (s.indexOf('cloudy') === 0) return '☁️ Trời nhiều mây';
+      if (s.indexOf('fog') === 0) return '🌫️ Có sương mù';
+      if (s.indexOf('thunder') !== -1) return '⛈️ Có mưa dông';
+      if (s.indexOf('lightrain') !== -1 || s.indexOf('drizzle') !== -1) return '🌦️ Mưa phùn nhẹ';
+      if (s.indexOf('rain') !== -1) return '🌧️ Trời đang mưa';
+      return '🌤️ Thời tiết hiện tại';
+    }
+
+    async function tryOpenMeteo(lat, lon) {
+      const wRes = await fetchWithTimeout(
+        'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&timezone=auto',
+        {},
+        6000
+      );
+      if (!wRes.ok) throw new Error('Open-Meteo HTTP ' + wRes.status);
+      const wJson = await wRes.json();
+      const cur = wJson.current || {};
+      if (typeof cur.temperature_2m !== 'number') throw new Error('Open-Meteo empty');
+      return {
+        temp: Math.round(cur.temperature_2m * 10) / 10,
+        apparentTemp: typeof cur.apparent_temperature === 'number' ? Math.round(cur.apparent_temperature * 10) / 10 : null,
+        humidity: typeof cur.relative_humidity_2m === 'number' ? Math.round(cur.relative_humidity_2m) : null,
+        condText: typeof cur.weather_code === 'number' ? describeWeatherCode(cur.weather_code) : '🌤️ Thời tiết hiện tại',
+        sourceName: 'Open-Meteo'
+      };
+    }
+
+    async function tryWttrIn(lat, lon) {
+      const wRes = await fetchWithTimeout(
+        'https://wttr.in/' + lat + ',' + lon + '?format=j1',
+        {},
+        6500
+      );
+      if (!wRes.ok) throw new Error('wttr.in HTTP ' + wRes.status);
+      const wJson = await wRes.json();
+      const cur = Array.isArray(wJson.current_condition) && wJson.current_condition[0];
+      if (!cur || cur.temp_C === undefined) throw new Error('wttr.in empty');
+      const tempVal = parseFloat(cur.temp_C);
+      if (isNaN(tempVal)) throw new Error('wttr.in NaN');
+      const feelsVal = cur.FeelsLikeC !== undefined ? parseFloat(cur.FeelsLikeC) : NaN;
+      const humVal = cur.humidity !== undefined ? parseInt(cur.humidity, 10) : NaN;
+      let areaName = '';
+      if (Array.isArray(wJson.nearest_area) && wJson.nearest_area[0]) {
+        const a = wJson.nearest_area[0];
+        const aName = a.areaName && a.areaName[0] && a.areaName[0].value;
+        const rName = a.region && a.region[0] && a.region[0].value;
+        areaName = [aName, rName].filter(Boolean).join(', ');
+      }
+      return {
+        temp: Math.round(tempVal * 10) / 10,
+        apparentTemp: !isNaN(feelsVal) ? Math.round(feelsVal * 10) / 10 : null,
+        humidity: !isNaN(humVal) ? humVal : null,
+        condText: describeWttrCode(cur.weatherCode),
+        areaName: areaName,
+        sourceName: 'wttr.in'
+      };
+    }
+
+    async function tryMetNo(lat, lon) {
+      const wRes = await fetchWithTimeout(
+        'https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=' + lat + '&lon=' + lon,
+        {},
+        6500
+      );
+      if (!wRes.ok) throw new Error('Met.no HTTP ' + wRes.status);
+      const wJson = await wRes.json();
+      const ts = wJson.properties && Array.isArray(wJson.properties.timeseries) && wJson.properties.timeseries[0];
+      const inst = ts && ts.data && ts.data.instant && ts.data.instant.details;
+      if (!inst || typeof inst.air_temperature !== 'number') throw new Error('Met.no empty');
+      const sym = ts.data.next_1_hours && ts.data.next_1_hours.summary && ts.data.next_1_hours.summary.symbol_code;
+      return {
+        temp: Math.round(inst.air_temperature * 10) / 10,
+        apparentTemp: null,
+        humidity: typeof inst.relative_humidity === 'number' ? Math.round(inst.relative_humidity) : null,
+        condText: describeMetNoSymbol(sym),
+        sourceName: 'Met.no'
+      };
+    }
+
     function fetchLocalWeather(manualTrigger) {
       if (isFetchingWeather) return;
       const btn = document.getElementById('btnRefreshWeather');
@@ -1266,18 +1373,26 @@
           const lat = pos.coords.latitude.toFixed(4);
           const lon = pos.coords.longitude.toFixed(4);
           try {
-            const wRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '¤t=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&timezone=auto');
-            if (!wRes.ok) throw new Error('Weather API failed');
-            const wJson = await wRes.json();
-            const cur = wJson.current || {};
-            const temp = typeof cur.temperature_2m === 'number' ? Math.round(cur.temperature_2m * 10) / 10 : null;
-            const apparentTemp = typeof cur.apparent_temperature === 'number' ? Math.round(cur.apparent_temperature * 10) / 10 : null;
-            const humidity = typeof cur.relative_humidity_2m === 'number' ? Math.round(cur.relative_humidity_2m) : null;
-            const condText = typeof cur.weather_code === 'number' ? describeWeatherCode(cur.weather_code) : '';
+            let result = null;
+            const providers = [tryOpenMeteo, tryWttrIn, tryMetNo];
+            for (let i = 0; i < providers.length; i++) {
+              try {
+                result = await providers[i](lat, lon);
+                if (result && typeof result.temp === 'number') break;
+              } catch (providerErr) {}
+            }
 
-            let placeName = (weatherData && weatherData.placeName) || 'Vị trí hiện tại';
+            if (!result) {
+              throw new Error('All weather providers failed');
+            }
+
+            let placeName = (weatherData && weatherData.placeName) || result.areaName || 'Vị trí hiện tại';
             try {
-              const gRes = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=vi');
+              const gRes = await fetchWithTimeout(
+                'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=vi',
+                {},
+                4500
+              );
               if (gRes.ok) {
                 const gJson = await gRes.json();
                 const parts = [gJson.locality, gJson.city || gJson.principalSubdivision].filter(Boolean);
@@ -1287,25 +1402,24 @@
               }
             } catch (geoErr) {}
 
-            if (temp !== null) {
-              const now = new Date();
-              const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-              saveWeatherCache({
-                temp: temp,
-                apparentTemp: apparentTemp,
-                humidity: humidity,
-                condText: condText,
-                placeName: placeName,
-                updatedAt: Date.now(),
-                timeStr: timeStr
-              });
-              renderWeatherCard();
-              if (manualTrigger) showToast('Đã cập nhật thời tiết: ' + temp + '°C', 'ok');
-            } else {
-              renderWeatherCard('Không đọc được dữ liệu nhiệt độ lúc này.');
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            saveWeatherCache({
+              temp: result.temp,
+              apparentTemp: result.apparentTemp,
+              humidity: result.humidity,
+              condText: result.condText,
+              placeName: placeName,
+              sourceName: result.sourceName,
+              updatedAt: Date.now(),
+              timeStr: timeStr
+            });
+            renderWeatherCard();
+            if (manualTrigger) {
+              showToast('Đã cập nhật thời tiết: ' + result.temp + '°C (' + result.sourceName + ')', 'ok');
             }
           } catch (err) {
-            renderWeatherCard('Không thể kết nối máy chủ thời tiết. Vui lòng kiểm tra mạng.');
+            renderWeatherCard('Tạm thời không kết nối được máy chủ thời tiết. Đang hiển thị dữ liệu gần nhất.');
           } finally {
             isFetchingWeather = false;
             if (btn) btn.textContent = '🔄 Làm mới';
@@ -2050,7 +2164,7 @@
         const tParts = [];
         if (hasWarm) tParts.push('🔥 Nóng: ' + log.warmTemp + '°C');
         if (hasCool) tParts.push('❄️ Mát: ' + log.coolTemp + '°C');
-        tempLine = '<div><span class="temp-pill-inline' + (isWarn ? ' warn' : '') + '">' + tParts.join('  |  ') + '</span></div>';
+        tempLine = '<div><span class="temp-pill-inline' + (isWarn ? ' warn' : '') + '">' + tParts.join(' &nbsp;|&nbsp; ') + '</span></div>';
       }
 
       const noteLine = log.notes ? '<div class="log-sub" style="color:#0F172A;margin-top:2px;">📝 ' + escapeHTML(log.notes) + '</div>' : '';
@@ -2061,7 +2175,7 @@
             '<div class="log-date">' + formatVNDate(log.date) + ' • ' + (log.time || '') + '</div>' +
             '<div class="log-main">' + escapeHTML(foodText) + weightBadge + '</div>' +
             tempLine +
-            '<div class="log-sub">💊 ' + escapeHTML(suppText) + '  |  💩 ' + escapeHTML(log.poop) + '</div>' +
+            '<div class="log-sub">💊 ' + escapeHTML(suppText) + ' &nbsp;|&nbsp; 💩 ' + escapeHTML(log.poop) + '</div>' +
             '<div class="log-sub">🦎 ' + escapeHTML(log.status) + '</div>' +
             noteLine +
           '</div>' +
@@ -2476,7 +2590,7 @@
       metaParts.push('🔄 Chu kỳ: <b>' + (pet.cycleDays || 2) + ' ngày/lần</b>');
       metaParts.push('⏰ Giờ ăn: <b>' + (pet.feedTime || '19:00') + '</b>');
       if (pet.note) metaParts.push('📌 ' + escapeHTML(pet.note));
-      document.getElementById('ovMeta').innerHTML = metaParts.join('  •  ');
+      document.getElementById('ovMeta').innerHTML = metaParts.join(' &nbsp;•&nbsp; ');
 
       renderWeatherCard();
 
