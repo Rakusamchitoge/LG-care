@@ -699,6 +699,219 @@
 
     .tab-pane { display: none; }
     .tab-pane.active { display: block; }
+
+    /* ============================================================
+       DESKTOP PC DASHBOARD LAYOUT (>= 960px)
+       ============================================================ */
+    .sidebar-nav, .sidebar-title, .sidebar-footer { display: none; }
+
+    @media (min-width: 960px) {
+      body {
+        padding-bottom: 32px;
+        background: #F1F5F9;
+      }
+
+      /* Sidebar cố định bên trái thay cho topbar & bottom-nav trên PC */
+      .topbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 260px;
+        border-bottom: none;
+        border-right: 1px solid var(--border);
+        background: #FFFFFF;
+        padding: 22px 16px;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        z-index: 40;
+      }
+
+      .topbar-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin: 0;
+        max-width: none;
+      }
+
+      .brand {
+        font-size: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .brand-badge {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
+        border-radius: 10px;
+      }
+
+      .top-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .sync-pill, .btn-add-pet {
+        text-align: center;
+        padding: 9px 12px;
+        font-size: 13px;
+        border-radius: 11px;
+      }
+
+      .sidebar-title {
+        display: block;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 18px 0 8px 4px;
+      }
+
+      .pet-bar {
+        margin: 0;
+        max-width: none;
+        flex-direction: column;
+        overflow-x: visible;
+        gap: 6px;
+      }
+      .pet-pill {
+        width: 100%;
+        text-align: left;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .pet-pill:hover:not(.active) {
+        background: #E2E8F0;
+        color: var(--text);
+      }
+
+      .sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .side-nav-btn {
+        width: 100%;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        padding: 11px 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #475569;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.15s ease;
+      }
+      .side-nav-btn:hover:not(.active) {
+        background: #F8FAFC;
+        color: var(--text);
+      }
+      .side-nav-btn.active {
+        background: var(--primary-soft);
+        border-color: #FED7AA;
+        color: var(--primary-dark);
+        font-weight: 700;
+      }
+      .side-nav-ico {
+        font-size: 18px;
+        width: 22px;
+        text-align: center;
+      }
+
+      .sidebar-footer {
+        display: block;
+        margin-top: auto;
+        padding-top: 16px;
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      /* Ẩn bottom-nav của mobile khi ở màn hình máy tính */
+      .bottom-nav {
+        display: none !important;
+      }
+
+      /* Khu vực nội dung chính bên phải Sidebar */
+      .container {
+        margin-left: 260px;
+        max-width: 1240px;
+        padding: 24px 28px 36px;
+      }
+
+      .empty-box {
+        max-width: 520px;
+        margin: 60px auto;
+        padding: 44px 32px;
+      }
+
+      /* Tab Tổng quan: Grid 2 cột cân đối */
+      #tab-overview.tab-pane.active {
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+        gap: 18px;
+        align-items: start;
+      }
+      .ov-col-left, .ov-col-right {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .ov-col-left .card, .ov-col-right .card, .ov-col-right .kpi-grid {
+        margin-bottom: 0;
+      }
+
+      /* Tab Ghi nhật ký: Form bên trái, Lịch sử toàn bộ bên phải */
+      #tab-log.tab-pane.active {
+        display: grid;
+        grid-template-columns: 1fr 1.15fr;
+        gap: 18px;
+        align-items: start;
+      }
+      #tab-log > .card {
+        margin-bottom: 0;
+      }
+      #tab-log > .card:last-child {
+        max-height: calc(100vh - 56px);
+        overflow-y: auto;
+      }
+
+      /* Tab Thống kê: 2 biểu đồ nằm ngang hàng song song, Bảng cân nặng trải full dưới */
+      #tab-weight.tab-pane.active {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        align-items: stretch;
+      }
+      #tab-weight > .card {
+        margin-bottom: 0;
+      }
+      #tab-weight > .card:last-child {
+        grid-column: 1 / -1;
+      }
+
+      /* Tab Đồng bộ: 2 thẻ nằm song song */
+      #tab-backup.tab-pane.active {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        align-items: start;
+      }
+      #tab-backup > .card {
+        margin-bottom: 0;
+      }
+    }
   </style>
 </head>
 <body>
@@ -716,7 +929,30 @@
         <button type="button" class="btn-add-pet" onclick="openPetModal(false)">+ Thêm bé</button>
       </div>
     </div>
+    <div class="sidebar-title">Hồ sơ Gecko</div>
     <div id="petBar" class="pet-bar"></div>
+
+    <div id="sidebarNavWrap" style="display:none;">
+      <div class="sidebar-title">Bảng điều khiển</div>
+      <nav class="sidebar-nav">
+        <button type="button" class="side-nav-btn active" data-tab="overview" onclick="switchTab('overview')">
+          <span class="side-nav-ico">📊</span><span>Tổng quan</span>
+        </button>
+        <button type="button" class="side-nav-btn" data-tab="log" onclick="switchTab('log')">
+          <span class="side-nav-ico">📝</span><span>Ghi nhật ký</span>
+        </button>
+        <button type="button" class="side-nav-btn" data-tab="weight" onclick="switchTab('weight')">
+          <span class="side-nav-ico">📈</span><span>Thống kê</span>
+        </button>
+        <button type="button" class="side-nav-btn" data-tab="backup" onclick="switchTab('backup')">
+          <span class="side-nav-ico">☁️</span><span>Đồng bộ & Sao lưu</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="sidebar-footer">
+      💻 Giao diện PC & 📱 Mobile tự động thích ứng • Đồng bộ thời gian thực qua Firebase.
+    </div>
   </header>
 
   <main class="container">
@@ -731,6 +967,7 @@
 
     <div id="appContent" style="display:none;">
       <section id="tab-overview" class="tab-pane active">
+        <div class="ov-col-left">
         <div class="card">
           <div class="pet-head">
             <div>
@@ -775,6 +1012,8 @@
           <div id="iosHint" class="hint-box"></div>
         </div>
 
+        </div>
+        <div class="ov-col-right">
         <div class="kpi-grid">
           <div class="kpi">
             <div class="kpi-lbl">Cân nặng hiện tại</div>
@@ -804,6 +1043,7 @@
             <button type="button" class="btn btn-primary btn-sm" onclick="switchTab('log')">+ Ghi mới</button>
           </div>
           <div id="recentLogs"></div>
+        </div>
         </div>
       </section>
 
@@ -1657,9 +1897,11 @@
 
     function switchTab(tabName, preserveEdit) {
       document.querySelectorAll('.tab-pane').forEach(function (el) { el.classList.remove('active'); });
-      document.querySelectorAll('.nav-btn').forEach(function (el) { el.classList.remove('active'); });
+      document.querySelectorAll('.nav-btn, .side-nav-btn').forEach(function (el) { el.classList.remove('active'); });
       document.getElementById('tab-' + tabName).classList.add('active');
-      document.querySelector('.nav-btn[data-tab="' + tabName + '"]').classList.add('active');
+      document.querySelectorAll('.nav-btn[data-tab="' + tabName + '"], .side-nav-btn[data-tab="' + tabName + '"]').forEach(function (el) {
+        el.classList.add('active');
+      });
 
       if (tabName === 'log' && !preserveEdit) {
         initLogForm();
@@ -2541,6 +2783,7 @@
       const emptyBox = document.getElementById('emptyState');
       const appContent = document.getElementById('appContent');
       const bottomNav = document.getElementById('bottomNav');
+      const sidebarNavWrap = document.getElementById('sidebarNavWrap');
 
       if (getEndpoint()) {
         setSyncBadge('ok', '☁️ Đã đồng bộ');
@@ -2553,6 +2796,7 @@
         emptyBox.style.display = 'block';
         appContent.style.display = 'none';
         bottomNav.style.display = 'none';
+        if (sidebarNavWrap) sidebarNavWrap.style.display = 'none';
         return;
       }
 
@@ -2564,6 +2808,7 @@
       emptyBox.style.display = 'none';
       appContent.style.display = 'block';
       bottomNav.style.display = 'grid';
+      if (sidebarNavWrap) sidebarNavWrap.style.display = 'block';
 
       state.geckos.forEach(function (g) {
         const btn = document.createElement('button');
