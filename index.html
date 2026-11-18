@@ -1207,6 +1207,82 @@
         margin-bottom: 0;
       }
     }
+
+    /* ============================================================
+       AI HEALTH ANALYSIS CARD (GOOGLE GEMINI API)
+       ============================================================ */
+    .ai-card {
+      border: 1.5px solid #DDD6FE;
+      background: linear-gradient(180deg, #FAF5FF 0%, #FFFFFF 42%);
+    }
+    .ai-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .btn-ai {
+      background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%);
+      color: #FFFFFF;
+      border: none;
+      box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
+    }
+    .btn-ai:hover:not(:disabled) {
+      filter: brightness(1.06);
+    }
+    .btn-ai:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+    .ai-result-box {
+      margin-top: 12px;
+      padding: 12px 13px;
+      border-radius: 12px;
+      background: #FFFFFF;
+      border: 1px solid #E9D5FF;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #1E293B;
+    }
+    .ai-result-box h4 {
+      margin: 10px 0 4px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #5B21B6;
+    }
+    .ai-result-box h4:first-child {
+      margin-top: 0;
+    }
+    .ai-result-box ul {
+      margin: 4px 0 8px;
+      padding-left: 18px;
+    }
+    .ai-result-box li {
+      margin-bottom: 4px;
+    }
+    .ai-meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .ai-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(124, 58, 237, 0.25);
+      border-top-color: #7C3AED;
+      border-radius: 50%;
+      animation: aiSpin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes aiSpin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -1389,6 +1465,20 @@
           </div>
         </div>
 
+        <div class="card ai-card" id="aiAnalysisCard">
+          <div class="card-title" style="margin-bottom:8px;">
+            <span>✨ Trợ lý AI Phân tích sức khỏe</span>
+            <div class="ai-header-actions">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="openAiModal()" title="Cài đặt Gemini API Key">🔑 API Key</button>
+              <button type="button" class="btn btn-ai btn-sm" id="btnRunAi" onclick="runGeminiAnalysis()">✨ Phân tích ngay</button>
+            </div>
+          </div>
+          <div id="aiStatusLine" style="font-size:12.5px;color:var(--muted);line-height:1.45;">
+            AI sẽ tổng hợp cân nặng, khẩu phần mồi, lịch bổ sung Canxi/D3, tình trạng phân và nhiệt độ chuồng để đánh giá sức khỏe của bé.
+          </div>
+          <div id="aiResultContainer" style="display:none;"></div>
+        </div>
+
         <div class="card">
           <div class="card-title">
             <span>📋 Nhật ký gần đây</span>
@@ -1538,6 +1628,15 @@
         </div>
 
         <div class="card">
+          <div class="card-title">✨ Cấu hình Google Gemini AI</div>
+          <p style="font-size:13px; color:var(--muted); line-height:1.5; margin-top:0;">
+            Nhập mã <b>Gemini API Key</b> (tạo miễn phí tại Google AI Studio) để AI phân tích dữ liệu ăn uống, tăng trưởng và nhiệt độ chuồng của từng bé. Mã chỉ lưu cục bộ trong <code>localStorage</code> trên trình duyệt của bạn.
+          </p>
+          <div id="aiKeyStatusDetail" class="hint-box" style="margin-bottom:12px;">Chưa lưu Gemini API Key trên thiết bị này.</div>
+          <button type="button" class="btn btn-ai" onclick="openAiModal()">🔑 Nhập / Đổi Gemini API Key</button>
+        </div>
+
+        <div class="card">
           <div class="card-title">💾 Sao lưu thủ công ra tệp</div>
           <button type="button" class="btn btn-primary" onclick="exportJSON()" style="margin-bottom:10px;">📤 Xuất dữ liệu sao lưu (.json)</button>
           <button type="button" class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin-bottom:10px;">📥 Nhập dữ liệu từ file (.json)</button>
@@ -1650,6 +1749,37 @@
 
       <button type="button" class="btn btn-blue" onclick="saveSyncConfig()" style="margin-bottom:8px;">💾 Lưu & Đồng bộ ngay</button>
       <button type="button" id="btnDisconnectSync" class="btn btn-danger" onclick="disconnectSync()" style="display:none;">Ngắt kết nối đồng bộ</button>
+    </div>
+  </div>
+
+  <div id="aiModal" class="modal-backdrop" onclick="if(event.target===this) closeAiModal()">
+    <div class="modal-sheet">
+      <div class="card-title">
+        <span>✨ Cài đặt Google Gemini API Key</span>
+        <button type="button" onclick="closeAiModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label for="inpGeminiKey">Google Gemini API Key *</label>
+        <input type="password" id="inpGeminiKey" placeholder="AIzaSy..." autocomplete="off">
+      </div>
+
+      <div class="form-group">
+        <label for="selGeminiModel">Mô hình AI sử dụng</label>
+        <select id="selGeminiModel">
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash (Nhanh, chuẩn xác - Khuyên dùng)</option>
+          <option value="gemini-2.5-pro">Gemini 2.5 Pro (Phân tích chuyên sâu)</option>
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+        </select>
+      </div>
+
+      <div class="hint-box" style="margin-bottom:14px;">
+        🔒 <b>Bảo mật trên GitHub Pages:</b> API Key được lưu riêng trong <code>localStorage</code> của trình duyệt này và tuyệt đối <b>không</b> bị đẩy lên GitHub hay Firebase.<br>
+        📌 Lấy key miễn phí tại: <b>aistudio.google.com/apikey</b>
+      </div>
+
+      <button type="button" class="btn btn-ai" onclick="saveAiConfig()" style="margin-bottom:8px;">💾 Lưu API Key</button>
+      <button type="button" id="btnRemoveAiKey" class="btn btn-danger" onclick="removeAiConfig()" style="display:none;">Xóa API Key khỏi trình duyệt</button>
     </div>
   </div>
 
@@ -1960,6 +2090,7 @@
 
       if (!manualTrigger && weatherData && (nowMs - (weatherData.updatedAt || 0) < WEATHER_AUTO_INTERVAL_MS)) {
         renderWeatherCard();
+      renderSavedAiReport(pet);
         return;
       }
 
@@ -3396,6 +3527,288 @@
 
       renderFeedingChart();
       renderWeightChart();
+    }
+
+
+    /* ============================================================
+       GOOGLE GEMINI AI HEALTH ANALYSIS (LOCALSTORAGE API KEY)
+       ============================================================ */
+    const AI_CFG_KEY = 'gecko_care_gemini_cfg_v1';
+    const AI_CACHE_KEY = 'gecko_care_ai_cache_v1';
+    let aiCfg = loadAiCfg();
+    let aiCache = loadAiCache();
+    let isAnalyzingAi = false;
+
+    function loadAiCfg() {
+      try {
+        const raw = localStorage.getItem(AI_CFG_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return {
+            apiKey: parsed.apiKey || '',
+            model: parsed.model || 'gemini-2.5-flash'
+          };
+        }
+      } catch (e) {}
+      return { apiKey: '', model: 'gemini-2.5-flash' };
+    }
+
+    function saveAiCfgStorage() {
+      try {
+        localStorage.setItem(AI_CFG_KEY, JSON.stringify(aiCfg));
+      } catch (e) {}
+    }
+
+    function loadAiCache() {
+      try {
+        const raw = localStorage.getItem(AI_CACHE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return {};
+    }
+
+    function saveAiCacheStorage() {
+      try {
+        localStorage.setItem(AI_CACHE_KEY, JSON.stringify(aiCache));
+      } catch (e) {}
+    }
+
+    function maskApiKey(key) {
+      if (!key || key.length < 10) return '••••••••';
+      return key.slice(0, 6) + '••••••' + key.slice(-4);
+    }
+
+    function updateAiKeyUI() {
+      const detail = document.getElementById('aiKeyStatusDetail');
+      if (!detail) return;
+      if (aiCfg.apiKey) {
+        detail.innerHTML = '✅ <b>Đã lưu Gemini API Key:</b> <code>' + escapeHTML(maskApiKey(aiCfg.apiKey)) + '</code><br>🤖 Mô hình đang chọn: <b>' + escapeHTML(aiCfg.model) + '</b>';
+      } else {
+        detail.innerHTML = 'Chưa lưu Gemini API Key trên thiết bị này.';
+      }
+    }
+
+    function openAiModal() {
+      document.getElementById('inpGeminiKey').value = aiCfg.apiKey || '';
+      document.getElementById('selGeminiModel').value = aiCfg.model || 'gemini-2.5-flash';
+      document.getElementById('btnRemoveAiKey').style.display = aiCfg.apiKey ? 'block' : 'none';
+      document.getElementById('aiModal').classList.add('open');
+    }
+
+    function closeAiModal() {
+      document.getElementById('aiModal').classList.remove('open');
+    }
+
+    function saveAiConfig() {
+      const key = document.getElementById('inpGeminiKey').value.trim();
+      const model = document.getElementById('selGeminiModel').value || 'gemini-2.5-flash';
+      if (!key) {
+        showToast('Vui lòng nhập Google Gemini API Key!', 'err');
+        return;
+      }
+      aiCfg.apiKey = key;
+      aiCfg.model = model;
+      saveAiCfgStorage();
+      updateAiKeyUI();
+      closeAiModal();
+      showToast('Đã lưu Gemini API Key vào trình duyệt!', 'ok');
+    }
+
+    function removeAiConfig() {
+      if (!confirm('Xóa Gemini API Key khỏi trình duyệt này?')) return;
+      aiCfg = { apiKey: '', model: 'gemini-2.5-flash' };
+      saveAiCfgStorage();
+      updateAiKeyUI();
+      closeAiModal();
+      showToast('Đã xóa Gemini API Key');
+    }
+
+    function formatAiMarkdownSafe(rawText) {
+      const lines = String(rawText || '').split(/\r?\n/);
+      let htmlOut = '';
+      let inList = false;
+
+      function inlineBold(s) {
+        return escapeHTML(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+      }
+
+      lines.forEach(function (line) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          if (inList) {
+            htmlOut += '</ul>';
+            inList = false;
+          }
+          return;
+        }
+        if (/^#{1,4}\s+/.test(trimmed)) {
+          if (inList) { htmlOut += '</ul>'; inList = false; }
+          const titleText = trimmed.replace(/^#{1,4}\s+/, '');
+          htmlOut += '<h4>' + inlineBold(titleText) + '</h4>';
+        } else if (/^[-*•]\s+/.test(trimmed)) {
+          if (!inList) { htmlOut += '<ul>'; inList = true; }
+          const itemText = trimmed.replace(/^[-*•]\s+/, '');
+          htmlOut += '<li>' + inlineBold(itemText) + '</li>';
+        } else {
+          if (inList) { htmlOut += '</ul>'; inList = false; }
+          htmlOut += '<p style="margin:0 0 8px;">' + inlineBold(trimmed) + '</p>';
+        }
+      });
+
+      if (inList) htmlOut += '</ul>';
+      return htmlOut;
+    }
+
+    function renderSavedAiReport(pet) {
+      updateAiKeyUI();
+      const resBox = document.getElementById('aiResultContainer');
+      const statusLine = document.getElementById('aiStatusLine');
+      if (!pet || !resBox || !statusLine) return;
+
+      const cached = aiCache[pet.id];
+      if (cached && cached.html) {
+        statusLine.style.display = 'none';
+        resBox.style.display = 'block';
+        resBox.innerHTML =
+          '<div class="ai-result-box">' + cached.html + '</div>' +
+          '<div class="ai-meta-bar">' +
+            '<span>🤖 ' + escapeHTML(cached.model || 'Gemini') + '</span>' +
+            '<span>🕒 Phân tích lúc ' + escapeHTML(cached.time || '') + '</span>' +
+          '</div>';
+      } else {
+        statusLine.style.display = 'block';
+        resBox.style.display = 'none';
+        resBox.innerHTML = '';
+      }
+    }
+
+    function buildGeckoPromptPayload(pet) {
+      const sorted = (pet.logs || []).slice().sort(function (a, b) {
+        return (b.date + (b.time || '')).localeCompare(a.date + (a.time || ''));
+      });
+      const recent = sorted.slice(0, 20).map(function (l) {
+        const foods = (l.feeders || []).map(function (f) { return f.count + ' ' + f.type; }).join(', ') || 'Không ăn';
+        const supps = (l.supplements || []).join(', ') || 'Không rắc';
+        const tempStr = (typeof l.warmTemp === 'number' || typeof l.coolTemp === 'number')
+          ? ('Nóng: ' + (l.warmTemp ?? 'N/A') + '°C, Mát: ' + (l.coolTemp ?? 'N/A') + '°C')
+          : 'Không đo';
+        return '- Ngày ' + l.date + ' (' + (l.time || '') + '): Ăn [' + foods + '], Khoáng [' + supps + '], Cân nặng: ' + (l.weight ? l.weight + 'g' : 'Không cân') + ', Nhiệt chuồng: [' + tempStr + '], Phân: ' + (l.poop || 'Chưa rõ') + ', Trạng thái: ' + (l.status || 'Bình thường') + (l.notes ? ', Ghi chú: ' + l.notes : '');
+      });
+
+      const weatherSummary = (weatherData && typeof weatherData.temp === 'number')
+        ? ('Nhiệt độ ngoài trời tại ' + (weatherData.placeName || 'khu vực') + ': ' + weatherData.temp + '°C, độ ẩm ' + (weatherData.humidity ?? 'N/A') + '%')
+        : 'Chưa có dữ liệu thời tiết ngoài trời';
+
+      return [
+        'Bạn là chuyên gia thú y bò sát chuyên sâu về Leopard Gecko (Tắc kè da báo). Hãy phân tích dữ liệu chăm sóc thực tế dưới đây bằng tiếng Việt ngắn gọn, thực tế, dễ hiểu và đưa ra khuyến nghị hành động cụ thể cho người nuôi.',
+        '',
+        '=== HỒ SƠ BÉ GECKO ===',
+        '- Tên bé: ' + pet.name,
+        '- Morph: ' + (pet.morph || 'Normal'),
+        '- Giới tính: ' + (pet.gender || 'Chưa rõ'),
+        '- Tuổi / Ngày nở: ' + (pet.age || 'Chưa cập nhật'),
+        '- Chiều dài: ' + (pet.length || 'Chưa cập nhật'),
+        '- Chu kỳ cho ăn cài đặt: ' + (pet.cycleDays || 2) + ' ngày/lần lúc ' + (pet.feedTime || '19:00'),
+        '- Ghi chú hồ sơ: ' + (pet.note || 'Không có'),
+        '- Môi trường hiện tại: ' + weatherSummary,
+        '',
+        '=== NHẬT KÝ GẦN ĐÂY (TỐI ĐA 20 BẢN GHI MỚI NHẤT) ===',
+        recent.length ? recent.join('\n') : 'Chưa có bản ghi nhật ký nào.',
+        '',
+        '=== YÊU CẦU TRÌNH BÀY ===',
+        'Hãy chia câu trả lời thành 4 mục ngắn gọn dùng tiêu đề ### và gạch đầu dòng - :',
+        '### 1. Đánh giá tăng trưởng & Khẩu phần ăn',
+        '### 2. Cân đối Canxi & Vitamin D3',
+        '### 3. Nhiệt độ chuồng & Lột xác / Tiêu hóa',
+        '### 4. Việc cần làm trong 3 ngày tới'
+      ].join('\n');
+    }
+
+    async function runGeminiAnalysis() {
+      const pet = getActivePet();
+      if (!pet) return;
+
+      if (!aiCfg.apiKey) {
+        showToast('Hãy nhập Google Gemini API Key trước khi phân tích!', 'err');
+        openAiModal();
+        return;
+      }
+      if (isAnalyzingAi) return;
+
+      const btn = document.getElementById('btnRunAi');
+      const resBox = document.getElementById('aiResultContainer');
+      const statusLine = document.getElementById('aiStatusLine');
+
+      isAnalyzingAi = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Đang phân tích...';
+      }
+      if (statusLine) statusLine.style.display = 'none';
+      if (resBox) {
+        resBox.style.display = 'block';
+        resBox.innerHTML = '<div class="ai-result-box"><span class="ai-spinner"></span>AI đang đọc nhật ký của <b>' + escapeHTML(pet.name) + '</b> và tổng hợp đánh giá...</div>';
+      }
+
+      try {
+        const promptText = buildGeckoPromptPayload(pet);
+        const modelName = aiCfg.model || 'gemini-2.5-flash';
+        const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelName) + ':generateContent?key=' + encodeURIComponent(aiCfg.apiKey);
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 1200
+            }
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          const errMsg = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + response.status);
+          throw new Error(errMsg);
+        }
+
+        const candidate = data && data.candidates && data.candidates[0];
+        const parts = candidate && candidate.content && candidate.content.parts;
+        const replyText = Array.isArray(parts) ? parts.map(function (p) { return p.text || ''; }).join('') : '';
+
+        if (!replyText.trim()) {
+          throw new Error('AI không trả về nội dung phân tích.');
+        }
+
+        const formattedHtml = formatAiMarkdownSafe(replyText);
+        const now = new Date();
+        const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ' ' + formatVNDate(todayISO());
+
+        aiCache[pet.id] = {
+          html: formattedHtml,
+          model: modelName,
+          time: timeStr
+        };
+        saveAiCacheStorage();
+        renderSavedAiReport(pet);
+        showToast('AI đã hoàn tất phân tích cho ' + pet.name + '!', 'ok');
+      } catch (err) {
+        if (resBox) {
+          resBox.innerHTML =
+            '<div class="ai-result-box" style="border-color:#FECACA;background:#FEF2F2;color:#991B1B;">' +
+              '<b>⚠️ Lỗi gọi Google Gemini API:</b> ' + escapeHTML(err.message || 'Không thể kết nối') +
+              '<div style="margin-top:6px;font-size:12px;">Kiểm tra lại API Key trong nút <b>🔑 API Key</b> hoặc thử chuyển sang mô hình <b>Gemini 2.5 Flash</b>.</div>' +
+            '</div>';
+        }
+        showToast('Lỗi phân tích AI: ' + (err.message || 'Thất bại'), 'err');
+      } finally {
+        isAnalyzingAi = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '✨ Phân tích ngay';
+        }
+      }
     }
 
     initLogForm();
