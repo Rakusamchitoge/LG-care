@@ -596,6 +596,30 @@
       border-radius: 3px;
       display: inline-block;
     }
+    .seg-toggle {
+      display: inline-flex;
+      background: #F1F5F9;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 2px;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .seg-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+    .seg-btn.active {
+      background: #FFFFFF;
+      color: var(--primary);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
 
     .bottom-nav {
       position: fixed;
@@ -874,18 +898,24 @@
 
       <section id="tab-weight" class="tab-pane">
         <div class="card">
-          <div class="card-title">
-            <span>🦗 Biểu đồ số lượng mồi ăn (con/ngày)</span>
+          <div class="card-title" style="margin-bottom:6px;">
+            <span>🦗 Số lượng mồi ăn (con/ngày)</span>
+            <div class="seg-toggle">
+              <button type="button" id="btnFeedModeBar" class="seg-btn active" onclick="setFeedingChartMode('bar')">📊 Cột</button>
+              <button type="button" id="btnFeedModeLine" class="seg-btn" onclick="setFeedingChartMode('line')">📈 Đường</button>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
+            <div id="feedingLegend" class="chart-legend" style="margin-bottom:0; justify-content:flex-start;">
+              <span class="legend-item"><span class="legend-dot" style="background:#EA580C;"></span>Dubia</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#0284C7;"></span>Dế</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#16A34A;"></span>Sâu quy</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#8B5CF6;"></span>Superworm</span>
+            </div>
             <span id="feedingAvgBadge" style="font-size:12px; font-weight:700; color:var(--green);"></span>
           </div>
-          <div class="chart-legend">
-            <span class="legend-item"><span class="legend-dot" style="background:#EA580C;"></span>Gián Dubia</span>
-            <span class="legend-item"><span class="legend-dot" style="background:#0284C7;"></span>Dế</span>
-            <span class="legend-item"><span class="legend-dot" style="background:#16A34A;"></span>Sâu quy</span>
-            <span class="legend-item"><span class="legend-dot" style="background:#8B5CF6;"></span>Superworm</span>
-          </div>
           <div id="feedingChartContainer" class="chart-wrap"></div>
-          <div id="feedingChartTip" class="chart-tip">Chạm vào cột trên biểu đồ để xem chi tiết mồi đã ăn</div>
+          <div id="feedingChartTip" class="chart-tip">Chạm vào biểu đồ để xem chi tiết mồi đã ăn</div>
         </div>
 
         <div class="card">
@@ -1034,6 +1064,7 @@
     let lastNotifiedKey = '';
     let isSyncing = false;
     let isFetchingWeather = false;
+    let feedingChartMode = localStorage.getItem('gecko_feeding_chart_mode') || 'bar';
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').then(function (reg) {
@@ -2042,14 +2073,33 @@
       );
     }
 
+    function setFeedingChartMode(mode) {
+      feedingChartMode = mode === 'line' ? 'line' : 'bar';
+      localStorage.setItem('gecko_feeding_chart_mode', feedingChartMode);
+      renderFeedingChart();
+    }
+
     function renderFeedingChart() {
       const pet = getActivePet();
       const box = document.getElementById('feedingChartContainer');
       const tip = document.getElementById('feedingChartTip');
       const avgBadge = document.getElementById('feedingAvgBadge');
+      const legendBox = document.getElementById('feedingLegend');
+      const btnBar = document.getElementById('btnFeedModeBar');
+      const btnLine = document.getElementById('btnFeedModeLine');
       if (!pet || !box) return;
 
-      // Gom tổng số mồi theo từng ngày (12 ngày ghi nhận gần nhất)
+      if (btnBar) btnBar.classList.toggle('active', feedingChartMode === 'bar');
+      if (btnLine) btnLine.classList.toggle('active', feedingChartMode === 'line');
+      if (legendBox) {
+        legendBox.innerHTML = feedingChartMode === 'bar'
+          ? '<span class="legend-item"><span class="legend-dot" style="background:#EA580C;"></span>Dubia</span>' +
+            '<span class="legend-item"><span class="legend-dot" style="background:#0284C7;"></span>Dế</span>' +
+            '<span class="legend-item"><span class="legend-dot" style="background:#16A34A;"></span>Sâu quy</span>' +
+            '<span class="legend-item"><span class="legend-dot" style="background:#8B5CF6;"></span>Superworm</span>'
+          : '<span class="legend-item"><span class="legend-dot" style="background:#16A34A; border-radius:99px;"></span>Tổng số mồi (con/ngày)</span>';
+      }
+
       const dayMap = {};
       (pet.logs || []).forEach(function (l) {
         if (!l.date) return;
@@ -2090,7 +2140,7 @@
         }
       }
 
-      const W = 560, H = 220, padL = 36, padR = 18, padT = 26, padB = 34;
+      const W = 560, H = 220, padL = 38, padR = 22, padT = 26, padB = 34;
       const plotW = W - padL - padR;
       const plotH = H - padT - padB;
       const maxVal = Math.max(4, Math.max.apply(null, days.map(function (d) { return d.total; })));
@@ -2102,6 +2152,44 @@
         const val = Math.round(yMax - (yMax * i) / 2);
         gridSVG += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="#E2E8F0" stroke-dasharray="3 3"/>';
         gridSVG += '<text x="' + (padL - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="#64748B">' + val + '</text>';
+      }
+
+      window._feedingDays = days;
+
+      if (feedingChartMode === 'line') {
+        const coords = days.map(function (d, idx) {
+          const x = padL + (days.length === 1 ? plotW / 2 : (plotW * idx) / (days.length - 1));
+          const y = padT + plotH - (d.total / yMax) * plotH;
+          return { x: x, y: y, d: d };
+        });
+
+        const polyline = coords.map(function (c) { return c.x + ',' + c.y; }).join(' ');
+        const areaPoints = coords.length > 1
+          ? (coords[0].x + ',' + (padT + plotH) + ' ' + polyline + ' ' + coords[coords.length - 1].x + ',' + (padT + plotH))
+          : '';
+
+        let dotsSVG = '';
+        coords.forEach(function (c, idx) {
+          const shortDate = c.d.date.slice(5).split('-').reverse().join('/');
+          const dotColor = c.d.total === 0 ? '#94A3B8' : '#16A34A';
+          dotsSVG +=
+            '<g style="cursor:pointer" onclick="showFeedingBar(' + idx + ')">' +
+              '<circle cx="' + c.x + '" cy="' + c.y + '" r="14" fill="transparent"/>' +
+              '<circle cx="' + c.x + '" cy="' + c.y + '" r="5.5" fill="' + dotColor + '" stroke="#FFFFFF" stroke-width="2"/>' +
+              '<text x="' + c.x + '" y="' + (c.y - 11) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#0F172A">' + c.d.total + '</text>' +
+              '<text x="' + c.x + '" y="' + (H - 10) + '" text-anchor="middle" font-size="10" fill="#64748B">' + shortDate + '</text>' +
+            '</g>';
+        });
+
+        box.innerHTML =
+          '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;">' +
+            gridSVG +
+            (areaPoints ? '<polygon fill="#16A34A" fill-opacity="0.10" points="' + areaPoints + '"/>' : '') +
+            (coords.length > 1 ? '<polyline fill="none" stroke="#16A34A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="' + polyline + '"/>' : '') +
+            dotsSVG +
+          '</svg>';
+        showFeedingBar(days.length - 1);
+        return;
       }
 
       const slotW = plotW / days.length;
@@ -2141,7 +2229,6 @@
         barsSVG += '</g>';
       });
 
-      window._feedingDays = days;
       box.innerHTML =
         '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;">' +
           gridSVG +
