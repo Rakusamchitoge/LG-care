@@ -169,32 +169,6 @@
       cursor: pointer;
     }
 
-    .pet-bar {
-      max-width: 680px;
-      margin: 8px auto 0;
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .pet-bar::-webkit-scrollbar { display: none; }
-    .pet-pill {
-      flex-shrink: 0;
-      padding: 6px 13px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: #F1F5F9;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .pet-pill.active {
-      background: var(--text);
-      color: #FFFFFF;
-      border-color: var(--text);
-    }
-
     .container {
       max-width: 680px;
       margin: 0 auto;
@@ -227,39 +201,57 @@
     .empty-box h2 { margin: 0 0 6px; font-size: 18px; }
     .empty-box p { margin: 0 0 18px; color: var(--muted); font-size: 14px; line-height: 1.5; }
 
-    .pet-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 10px;
+    /* Live ESP32 Sensor Banner & Card */
+    .live-sensor-card {
+      border: 1.5px solid #FED7AA;
+      background: linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 55%);
     }
-    .pet-name { font-size: 20px; font-weight: 800; margin: 0; }
-    .tag {
+    .live-sensor-card.hot {
+      border-color: #FCA5A5;
+      background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 55%);
+    }
+    .live-sensor-card.cold {
+      border-color: #93C5FD;
+      background: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 55%);
+    }
+    .live-sensor-card.ideal {
+      border-color: #86EFAC;
+      background: linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 55%);
+    }
+    .live-dot {
       display: inline-block;
-      font-size: 11px;
+      width: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: #16A34A;
+      margin-right: 5px;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+    }
+    .live-dot.off {
+      background: #94A3B8;
+      box-shadow: none;
+    }
+    .live-temp-big {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--text);
+    }
+    .ppc-live-strip {
+      margin-top: 10px;
+      padding: 7px 10px;
+      border-radius: 10px;
+      font-size: 12px;
       font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      margin-top: 5px;
-      margin-right: 4px;
-    }
-    .tag-morph { background: var(--primary-soft); color: var(--primary-dark); }
-    .tag-gender { background: var(--blue-soft); color: var(--blue); }
-    .pet-meta {
-      margin-top: 8px;
-      font-size: 13px;
-      color: var(--muted);
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      background: #F1F5F9;
+      color: #475569;
     }
-    .pet-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
-    }
+    .ppc-live-strip.ideal { background: #DCFCE7; color: #15803D; }
+    .ppc-live-strip.hot { background: #FEE2E2; color: #B91C1C; }
+    .ppc-live-strip.cold { background: #DBEAFE; color: #1D4ED8; }
 
     /* Weather & Temperature Advice Card */
     .weather-main {
@@ -633,7 +625,7 @@
       -webkit-backdrop-filter: blur(12px);
       border-top: 1px solid var(--border);
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       padding: 6px 4px calc(6px + var(--safe-bottom));
     }
     .nav-btn {
@@ -700,9 +692,6 @@
     .tab-pane { display: none; }
     .tab-pane.active { display: block; }
 
-    /* ============================================================
-       DESKTOP PC DASHBOARD LAYOUT (>= 960px)
-       ============================================================ */
     .sidebar-nav, .sidebar-title, .sidebar-footer { display: none; }
 
     @media (min-width: 960px) {
@@ -711,7 +700,6 @@
         background: #F1F5F9;
       }
 
-      /* Sidebar cố định bên trái thay cho topbar & bottom-nav trên PC */
       .topbar {
         position: fixed;
         top: 0;
@@ -770,28 +758,6 @@
         margin: 18px 0 8px 4px;
       }
 
-      .pet-bar {
-        margin: 0;
-        max-width: none;
-        flex-direction: column;
-        overflow-x: visible;
-        gap: 6px;
-      }
-      .pet-pill {
-        width: 100%;
-        text-align: left;
-        padding: 10px 14px;
-        border-radius: 12px;
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .pet-pill:hover:not(.active) {
-        background: #E2E8F0;
-        color: var(--text);
-      }
-
       .sidebar-nav {
         display: flex;
         flex-direction: column;
@@ -838,12 +804,10 @@
         line-height: 1.5;
       }
 
-      /* Ẩn bottom-nav của mobile khi ở màn hình máy tính */
       .bottom-nav {
         display: none !important;
       }
 
-      /* Khu vực nội dung chính bên phải Sidebar */
       .container {
         margin-left: 260px;
         max-width: 1240px;
@@ -856,7 +820,6 @@
         padding: 44px 32px;
       }
 
-      /* Tab Tổng quan: Grid 2 cột cân đối */
       #tab-overview.tab-pane.active {
         display: grid;
         grid-template-columns: 1.05fr 1fr;
@@ -872,7 +835,6 @@
         margin-bottom: 0;
       }
 
-      /* Tab Ghi nhật ký: Form bên trái, Lịch sử toàn bộ bên phải */
       #tab-log.tab-pane.active {
         display: grid;
         grid-template-columns: 1fr 1.15fr;
@@ -887,7 +849,6 @@
         overflow-y: auto;
       }
 
-      /* Tab Thống kê: 2 biểu đồ nằm ngang hàng song song, Bảng cân nặng trải full dưới */
       #tab-weight.tab-pane.active {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -901,7 +862,6 @@
         grid-column: 1 / -1;
       }
 
-      /* Tab Đồng bộ: 2 thẻ nằm song song */
       #tab-backup.tab-pane.active {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -913,9 +873,6 @@
       }
     }
 
-    /* ============================================================
-       STRUCTURED GECKO PROFILE CARD (NO PHOTO, SPEC GRID + ACTION TILES)
-       ============================================================ */
     .profile-card-box {
       padding: 0;
       overflow: hidden;
@@ -1030,9 +987,6 @@
       stroke-linejoin: round;
     }
 
-    /* ============================================================
-       MỤC DANH SÁCH GECKO (DẠNG THẺ CHỌN ĐỂ MỞ TỔNG QUAN)
-       ============================================================ */
     .gecko-dir-header {
       display: flex;
       align-items: center;
@@ -1191,9 +1145,6 @@
       stroke-linejoin: round;
     }
 
-    .bottom-nav {
-      grid-template-columns: repeat(5, 1fr);
-    }
     .ov-back-bar {
       display: flex;
       align-items: center;
@@ -1208,9 +1159,6 @@
       }
     }
 
-    /* ============================================================
-       AI HEALTH ANALYSIS CARD (GOOGLE GEMINI API)
-       ============================================================ */
     .ai-card {
       border: 1.5px solid #DDD6FE;
       background: linear-gradient(180deg, #FAF5FF 0%, #FFFFFF 42%);
@@ -1323,7 +1271,7 @@
     </div>
 
     <div class="sidebar-footer">
-      💻 Giao diện PC & 📱 Mobile tự động thích ứng • Đồng bộ thời gian thực qua Firebase.
+      💻 Giao diện PC & 📱 Mobile tự động thích ứng • Cảm biến ESP32 & Firebase thời gian thực.
     </div>
   </header>
 
@@ -1342,7 +1290,7 @@
         <div class="gecko-dir-header">
           <div>
             <h1 class="gecko-dir-title">🦎 Danh sách Gecko của bạn</h1>
-            <div class="gecko-dir-sub">Chạm vào thẻ của từng bé để xem tổng quan, lịch cho ăn và nhật ký</div>
+            <div class="gecko-dir-sub">Chạm vào thẻ của từng bé để xem tổng quan, cảm biến nhiệt độ & nhật ký</div>
           </div>
           <button type="button" class="btn btn-primary btn-sm" onclick="openPetModal(false)">+ Thêm bé mới</button>
         </div>
@@ -1413,6 +1361,17 @@
           </div>
         </div>
 
+        <!-- Thẻ Cảm biến vùng nóng ESP32-C3 thời gian thực -->
+        <div class="card live-sensor-card" id="liveSensorCard">
+          <div class="card-title" style="margin-bottom:8px;">
+            <span>📡 Cảm biến vùng nóng (ESP32 Live)</span>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="pullSensorsFromCloud(true)">🔄 Đọc ngay</button>
+          </div>
+          <div id="liveSensorContent">
+            <div style="font-size:13px;color:var(--muted);">Chưa có dữ liệu từ cảm biến ESP32-C3.</div>
+          </div>
+        </div>
+
         <!-- Thẻ Thời tiết tự động & Lời khuyên chăm sóc -->
         <div class="card" id="weatherCard">
           <div class="card-title" style="margin-bottom:8px;">
@@ -1454,9 +1413,9 @@
             <div id="kpiFoodSub" class="kpi-sub">Trong 0 bữa ăn</div>
           </div>
           <div class="kpi">
-            <div class="kpi-lbl">Nhiệt độ chuồng đo gần nhất</div>
-            <div id="kpiTemp" class="kpi-val" style="font-size:15px;">-- / --°C</div>
-            <div id="kpiTempSub" class="kpi-sub">Chưa đo trong chuồng</div>
+            <div class="kpi-lbl">Vùng nóng (Cảm biến / Nhật ký)</div>
+            <div id="kpiTemp" class="kpi-val" style="font-size:16px;">-- / --°C</div>
+            <div id="kpiTempSub" class="kpi-sub">Chưa có dữ liệu</div>
           </div>
           <div class="kpi">
             <div class="kpi-lbl">Đi phân & Thể trạng</div>
@@ -1474,7 +1433,7 @@
             </div>
           </div>
           <div id="aiStatusLine" style="font-size:12.5px;color:var(--muted);line-height:1.45;">
-            AI sẽ tổng hợp cân nặng, khẩu phần mồi, lịch bổ sung Canxi/D3, tình trạng phân và nhiệt độ chuồng để đánh giá sức khỏe của bé (tự động chuyển model dự phòng nếu quá tải).
+            AI sẽ tổng hợp cân nặng, khẩu phần mồi, lịch bổ sung Canxi/D3, tình trạng phân và nhiệt độ cảm biến chuồng để đánh giá sức khỏe của bé.
           </div>
           <div id="aiResultContainer" style="display:none;"></div>
         </div>
@@ -1506,8 +1465,8 @@
 
           <div class="temp-input-box">
             <div class="temp-box-head">
-              <b>🌡️ Nhiệt độ đo thực tế trong chuồng</b>
-              <span>Chuẩn: Nóng 30–32°C | Mát 24–26°C</span>
+              <b>🌡️ Nhiệt độ đo trong chuồng</b>
+              <span id="logSensorAutoNote">Chuẩn: Nóng 30–32°C | Mát 24–26°C</span>
             </div>
             <div class="form-row-2">
               <div class="form-group" style="margin-bottom:8px;">
@@ -1615,9 +1574,9 @@
 
       <section id="tab-backup" class="tab-pane">
         <div class="card">
-          <div class="card-title">☁️ Đồng bộ tự động iPhone ↔ Máy tính</div>
+          <div class="card-title">☁️ Đồng bộ tự động iPhone ↔ PC ↔ ESP32</div>
           <p style="font-size:13px; color:var(--muted); line-height:1.5; margin-top:0;">
-            Nhập cùng một <b>Đường dẫn Firebase</b> và <b>Mã đồng bộ bí mật</b> trên cả điện thoại lẫn máy tính để dữ liệu tự động cập nhật hai chiều.
+            Nhập cùng một <b>Đường dẫn Firebase</b> và <b>Mã đồng bộ bí mật</b> trên cả điện thoại, máy tính và code ESP32-C3 để dữ liệu tự động cập nhật thời gian thực.
           </p>
           <div id="syncStatusDetail" class="hint-box" style="margin-bottom:12px;">Chưa cấu hình đồng bộ đám mây.</div>
           <button type="button" class="btn btn-blue" onclick="openSyncModal()" style="margin-bottom:8px;">⚙️ Cài đặt kết nối Firebase</button>
@@ -1737,12 +1696,12 @@
       </div>
 
       <div class="form-group">
-        <label for="inpSyncCode">Mã đồng bộ bí mật (tự đặt, dùng chung cho 2 máy) *</label>
+        <label for="inpSyncCode">Mã đồng bộ bí mật (tự đặt, dùng chung cho 2 máy & ESP32) *</label>
         <input type="text" id="inpSyncCode" placeholder="VD: camsua2026">
       </div>
 
       <div class="hint-box" style="margin-bottom:14px;">
-        💡 <b>Thứ tự chuẩn:</b> Hãy nhập thông tin này trên thiết bị <b>đang có dữ liệu trước</b> (VD: iPhone) để đẩy dữ liệu lên đám mây, sau đó nhập giống hệt trên máy tính để tải dữ liệu về.
+        💡 <b>Đồng bộ 3 chiều:</b> Hãy điền đúng <b>Đường dẫn Firebase</b> và <b>Mã đồng bộ bí mật</b> này vào code ESP32-C3 để nhiệt độ vùng nóng của Sữa và Cam tự động hiển thị trên web.
       </div>
 
       <button type="button" class="btn btn-blue" onclick="saveSyncConfig()" style="margin-bottom:8px;">💾 Lưu & Đồng bộ ngay</button>
@@ -1785,11 +1744,13 @@
     const STORAGE_KEY = 'gecko_care_tracker_pwa_v1';
     const SYNC_CFG_KEY = 'gecko_care_sync_cfg_v1';
     const WEATHER_CACHE_KEY = 'gecko_care_weather_v2';
+    const SENSOR_CACHE_KEY = 'gecko_care_sensor_live_v1';
     const WEATHER_AUTO_INTERVAL_MS = 15 * 60 * 1000;
 
     let state = loadState();
     let syncCfg = loadSyncCfg();
     let weatherData = loadWeatherCache();
+    let liveSensorData = loadSensorCache();
     let editingPetId = null;
     let editingLogId = null;
     let swReg = null;
@@ -1845,6 +1806,176 @@
       try {
         localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(data));
       } catch (e) {}
+    }
+
+    function loadSensorCache() {
+      try {
+        const raw = localStorage.getItem(SENSOR_CACHE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return null;
+    }
+
+    function saveSensorCache(data) {
+      liveSensorData = data;
+      try {
+        localStorage.setItem(SENSOR_CACHE_KEY, JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    /* ============================================================
+       ESP32-C3 LIVE SENSOR INTEGRATION (SỮA & CAM)
+       ============================================================ */
+    function getSensorEndpoint() {
+      if (!syncCfg.url || !syncCfg.code) return null;
+      let base = syncCfg.url.trim().replace(/\/+$/, '').replace(/\.json$/, '');
+      const cleanCode = syncCfg.code.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+      return base + '/sensors/' + cleanCode + '.json';
+    }
+
+    function normalizeVietnameseStr(s) {
+      return String(s || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .trim();
+    }
+
+    function getPetLiveSensorTemp(pet) {
+      if (!pet || !liveSensorData) return null;
+      const n = normalizeVietnameseStr(pet.name);
+      let val = null;
+      if (n.indexOf('sua') !== -1 && typeof liveSensorData.sua_hot_temp === 'number') {
+        val = liveSensorData.sua_hot_temp;
+      } else if (n.indexOf('cam') !== -1 && typeof liveSensorData.cam_hot_temp === 'number') {
+        val = liveSensorData.cam_hot_temp;
+      } else {
+        const idx = state.geckos.findIndex(function (g) { return g.id === pet.id; });
+        if (idx === 0 && typeof liveSensorData.sua_hot_temp === 'number') val = liveSensorData.sua_hot_temp;
+        else if (idx === 1 && typeof liveSensorData.cam_hot_temp === 'number') val = liveSensorData.cam_hot_temp;
+      }
+      if (typeof val !== 'number' || isNaN(val) || val <= -50 || val >= 80) return null;
+      return Math.round(val * 10) / 10;
+    }
+
+    function classifyHotTemp(temp) {
+      if (temp > 33.5) {
+        return {
+          cls: 'hot',
+          badgeClass: 'wb-hot',
+          badgeText: '🔥 QUÁ NÓNG (> 33.5°C)',
+          advice: 'Nhiệt độ vùng nóng đang vượt ngưỡng an toàn! Hãy giảm dimmer hoặc kiểm tra lại tấm sưởi ngay để tránh gây stress nhiệt.'
+        };
+      }
+      if (temp < 29.0) {
+        return {
+          cls: 'cold',
+          badgeClass: 'wb-cold',
+          badgeText: '❄️ QUÁ LẠNH (< 29.0°C)',
+          advice: 'Vùng sưởi chưa đủ ấm để bé tiêu hóa tốt. Hãy tăng công suất sưởi lên dải chuẩn 30.0 – 32.5°C.'
+        };
+      }
+      return {
+        cls: 'ideal',
+        badgeClass: 'wb-ideal',
+        badgeText: '✅ Nhiệt độ sưởi lý tưởng',
+        advice: 'Nhiệt độ vùng nóng đang nằm trong ngưỡng chuẩn (29.0 – 33.5°C), rất tốt cho tiêu hóa và trao đổi chất của bé.'
+      };
+    }
+
+    async function pullSensorsFromCloud(manualTrigger) {
+      const endpoint = getSensorEndpoint();
+      if (!endpoint) return;
+      try {
+        const res = await fetch(endpoint);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (data && (typeof data.sua_hot_temp === 'number' || typeof data.cam_hot_temp === 'number')) {
+          const now = new Date();
+          const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+          saveSensorCache({
+            sua_hot_temp: typeof data.sua_hot_temp === 'number' ? data.sua_hot_temp : null,
+            cam_hot_temp: typeof data.cam_hot_temp === 'number' ? data.cam_hot_temp : null,
+            fetchedAt: Date.now(),
+            fetchedTimeStr: timeStr
+          });
+          renderLiveSensorCard();
+          updateActivePetSensorKPIs();
+          if (manualTrigger) {
+            showToast('Đã cập nhật nhiệt độ cảm biến ESP32!', 'ok');
+          }
+        } else if (manualTrigger) {
+          showToast('Chưa thấy dữ liệu cảm biến trên Firebase. Hãy kiểm tra ESP32-C3!', 'err');
+        }
+      } catch (e) {
+        if (manualTrigger) showToast('Lỗi đọc cảm biến từ Firebase!', 'err');
+      }
+    }
+
+    function renderLiveSensorCard() {
+      const card = document.getElementById('liveSensorCard');
+      const box = document.getElementById('liveSensorContent');
+      const pet = getActivePet();
+      if (!card || !box || !pet) return;
+
+      const liveTemp = getPetLiveSensorTemp(pet);
+      if (liveTemp === null) {
+        card.className = 'card live-sensor-card';
+        const hint = getSensorEndpoint()
+          ? 'Đang chờ ESP32-C3 gửi dữ liệu lên nhánh <code>/sensors/' + escapeHTML(syncCfg.code) + '</code>...'
+          : 'Hãy kết nối <b>Firebase</b> ở góc trên và nạp code ESP32-C3 với cùng <b>Mã đồng bộ</b> để xem nhiệt độ trực tiếp.';
+        box.innerHTML = '<div style="font-size:13px;color:var(--muted);line-height:1.5;"><span class="live-dot off"></span>' + hint + '</div>';
+        return;
+      }
+
+      const info = classifyHotTemp(liveTemp);
+      card.className = 'card live-sensor-card ' + info.cls;
+      const timeNote = (liveSensorData && liveSensorData.fetchedTimeStr) ? 'Đọc lúc ' + liveSensorData.fetchedTimeStr : 'Đang hoạt động';
+
+      box.innerHTML =
+        '<div class="weather-main">' +
+          '<div>' +
+            '<div class="weather-temp-row">' +
+              '<span class="live-temp-big">' + liveTemp.toFixed(1) + '°C</span>' +
+              '<span class="weather-cond">Đầu dò vùng nóng</span>' +
+            '</div>' +
+            '<div class="weather-loc"><span class="live-dot"></span>Chuồng ' + escapeHTML(pet.name) + ' • Tự động cập nhật mỗi 10s</div>' +
+          '</div>' +
+          '<span class="weather-badge ' + info.badgeClass + '">' + info.badgeText + '</span>' +
+        '</div>' +
+        '<div class="weather-advice ' + info.cls + '">' + info.advice + '</div>' +
+        '<div class="auto-sync-note">' +
+          '<span>📡 Nguồn: ESP32-C3 DS18B20</span>' +
+          '<span>🕒 ' + escapeHTML(timeNote) + '</span>' +
+        '</div>';
+    }
+
+    function updateActivePetSensorKPIs() {
+      const pet = getActivePet();
+      if (!pet) return;
+      const liveTemp = getPetLiveSensorTemp(pet);
+      const latestTempEntry = getLatestRecordedTemps(pet);
+      const kpiEl = document.getElementById('kpiTemp');
+      const kpiSubEl = document.getElementById('kpiTempSub');
+      if (!kpiEl || !kpiSubEl) return;
+
+      if (liveTemp !== null) {
+        const logWarm = (latestTempEntry && typeof latestTempEntry.warmTemp === 'number') ? latestTempEntry.warmTemp + '°' : '--';
+        kpiEl.textContent = liveTemp.toFixed(1) + '° / ' + logWarm + 'C';
+        kpiEl.style.color = liveTemp > 33.5 ? 'var(--red)' : (liveTemp < 29.0 ? 'var(--blue)' : 'var(--green)');
+        kpiSubEl.textContent = 'Cảm biến Live / Nhật ký';
+      } else if (latestTempEntry) {
+        const wStr = typeof latestTempEntry.warmTemp === 'number' ? latestTempEntry.warmTemp + '°' : '--';
+        const cStr = typeof latestTempEntry.coolTemp === 'number' ? latestTempEntry.coolTemp + '°' : '--';
+        kpiEl.textContent = wStr + ' / ' + cStr + 'C';
+        kpiEl.style.color = 'var(--text)';
+        kpiSubEl.textContent = 'Nóng / Mát (' + formatVNDate(latestTempEntry.date) + ')';
+      } else {
+        kpiEl.textContent = '-- / --°C';
+        kpiEl.style.color = 'var(--text)';
+        kpiSubEl.textContent = 'Chưa đo trong chuồng';
+      }
     }
 
     function describeWeatherCode(code) {
@@ -1904,8 +2035,13 @@
         advice = 'Thời tiết nắng nóng gay gắt (<b>' + temp + '°C</b>), nguy cơ sốc nhiệt cao! Tắt bớt thiết bị sưởi nếu nhiệt độ phòng đã trên 30°C, đặt chuồng của ' + name + ' ở góc râm mát tránh nắng chiếu trực tiếp và giữ phòng thông thoáng hoặc bật điều hòa dưới <b>29°C</b>.';
       }
 
+      const liveW = getPetLiveSensorTemp(pet);
       const latestTempLog = getLatestRecordedTemps(pet);
-      if (latestTempLog && latestTempLog.date === todayISO()) {
+      if (liveW !== null) {
+        if (liveW < 29.0) advice += '<br>📡 <b>Cảm biến trực tiếp chuồng ' + name + ':</b> Vùng nóng đang ở <b>' + liveW + '°C</b> (hơi thấp, cần tăng sưởi lên 30–32°C).';
+        else if (liveW > 33.5) advice += '<br>📡 <b>Cảm biến trực tiếp chuồng ' + name + ':</b> Vùng nóng đang ở <b>' + liveW + '°C</b> (quá nóng, cần giảm nhiệt ngay).';
+        else advice += '<br>📡 <b>Cảm biến trực tiếp chuồng ' + name + ':</b> Vùng nóng đang đạt <b>' + liveW + '°C</b> (chuẩn lý tưởng).';
+      } else if (latestTempLog && latestTempLog.date === todayISO()) {
         const w = latestTempLog.warmTemp;
         const c = latestTempLog.coolTemp;
         const parts = [];
@@ -2301,6 +2437,7 @@
     function manualPull() {
       if (!getEndpoint()) { openSyncModal(); return; }
       pullFromCloud(true);
+      pullSensorsFromCloud(false);
     }
 
     function openSyncModal() {
@@ -2330,6 +2467,7 @@
       saveSyncCfg();
       closeSyncModal();
       await pullFromCloud(false);
+      await pullSensorsFromCloud(false);
       showToast('Đã lưu cấu hình đồng bộ!', 'ok');
     }
 
@@ -2344,7 +2482,10 @@
 
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible') {
-        if (getEndpoint()) pullFromCloud(false);
+        if (getEndpoint()) {
+          pullFromCloud(false);
+          pullSensorsFromCloud(false);
+        }
         fetchLocalWeather(false);
       }
     });
@@ -2353,6 +2494,11 @@
         pullFromCloud(false);
       }
     }, 15000);
+    setInterval(function () {
+      if (document.visibilityState === 'visible' && getSensorEndpoint()) {
+        pullSensorsFromCloud(false);
+      }
+    }, 10000);
     setInterval(function () {
       if (document.visibilityState === 'visible') {
         fetchLocalWeather(false);
@@ -2690,14 +2836,21 @@
     function initLogForm() {
       editingLogId = null;
       const pet = getActivePet();
+      const liveW = getPetLiveSensorTemp(pet);
       document.getElementById('logFormTitle').textContent = '📝 Ghi nhận bữa ăn, nhiệt độ & thể trạng';
       document.getElementById('btnSaveLog').textContent = '💾 Lưu nhật ký';
       document.getElementById('btnCancelEditLog').style.display = 'none';
 
       document.getElementById('logDate').value = todayISO();
       document.getElementById('logTime').value = (pet && pet.feedTime) || '19:00';
-      document.getElementById('logWarmTemp').value = '';
+      document.getElementById('logWarmTemp').value = liveW !== null ? liveW : '';
       document.getElementById('logCoolTemp').value = '';
+      const autoNote = document.getElementById('logSensorAutoNote');
+      if (autoNote) {
+        autoNote.textContent = liveW !== null
+          ? ('📡 Đã tự điền từ cảm biến: ' + liveW + '°C')
+          : 'Chuẩn: Nóng 30–32°C | Mát 24–26°C';
+      }
       document.getElementById('logWeight').value = '';
       document.getElementById('logNotes').value = '';
       document.getElementById('logPoop').value = 'Chưa đi phân';
@@ -2871,7 +3024,7 @@
       renderAll();
       switchTab('overview');
 
-      if (logData.warmTemp && (logData.warmTemp < 29 || logData.warmTemp > 33)) {
+      if (logData.warmTemp && (logData.warmTemp < 29 || logData.warmTemp > 33.5)) {
         showToast((wasEdited ? 'Đã cập nhật! ' : 'Đã lưu! ') + 'Lưu ý vùng nóng ' + logData.warmTemp + '°C đang lệch ngưỡng 30–32°C.', 'err');
       } else if (wasEdited) {
         showToast('Đã cập nhật bản ghi nhật ký!', 'ok');
@@ -2904,7 +3057,7 @@
       const hasCool = typeof log.coolTemp === 'number' && !isNaN(log.coolTemp);
       let tempLine = '';
       if (hasWarm || hasCool) {
-        const isWarn = (hasWarm && (log.warmTemp < 29 || log.warmTemp > 33)) || (hasCool && (log.coolTemp < 21 || log.coolTemp > 28));
+        const isWarn = (hasWarm && (log.warmTemp < 29 || log.warmTemp > 33.5)) || (hasCool && (log.coolTemp < 21 || log.coolTemp > 28));
         const tParts = [];
         if (hasWarm) tParts.push('🔥 Nóng: ' + log.warmTemp + '°C');
         if (hasCool) tParts.push('❄️ Mát: ' + log.coolTemp + '°C');
@@ -3324,6 +3477,13 @@
         const genderStr = escapeHTML(g.gender || 'Chưa rõ');
         const morphStr = escapeHTML(g.morph || 'Normal');
 
+        const gLiveTemp = getPetLiveSensorTemp(g);
+        let liveStripHTML = '<div class="ppc-live-strip"><span>📡 Vùng nóng (Cảm biến)</span><span>Chưa kết nối</span></div>';
+        if (gLiveTemp !== null) {
+          const tInfo = classifyHotTemp(gLiveTemp);
+          liveStripHTML = '<div class="ppc-live-strip ' + tInfo.cls + '"><span>📡 Vùng nóng (Live)</span><span>' + gLiveTemp.toFixed(1) + ' °C</span></div>';
+        }
+
         const card = document.createElement('div');
         card.className = 'pet-profile-card' + (isActive ? ' active' : '');
         card.onclick = function () {
@@ -3341,6 +3501,7 @@
               '<span class="ppc-open-pill">🪪 Mở thẻ</span>' +
             '</div>' +
             '<div class="ppc-species">Leopard gecko</div>' +
+            liveStripHTML +
             '<div class="ppc-grid">' +
               '<div class="ppc-item">' +
                 '<div class="ppc-lbl">Tuổi / Ngày nở</div>' +
@@ -3433,6 +3594,7 @@
         noteWrap.style.display = 'none';
       }
 
+      renderLiveSensorCard();
       renderWeatherCard();
       renderSavedAiReport(pet);
 
@@ -3483,16 +3645,7 @@
       document.getElementById('kpiFood').textContent = totalPrey + ' con';
       document.getElementById('kpiFoodSub').textContent = 'Trong ' + recentMeals.length + ' bữa ăn';
 
-      const latestTempEntry = getLatestRecordedTemps(pet);
-      if (latestTempEntry) {
-        const wStr = typeof latestTempEntry.warmTemp === 'number' ? latestTempEntry.warmTemp + '°' : '--';
-        const cStr = typeof latestTempEntry.coolTemp === 'number' ? latestTempEntry.coolTemp + '°' : '--';
-        document.getElementById('kpiTemp').textContent = wStr + ' / ' + cStr + 'C';
-        document.getElementById('kpiTempSub').textContent = 'Nóng / Mát (' + formatVNDate(latestTempEntry.date) + ')';
-      } else {
-        document.getElementById('kpiTemp').textContent = '-- / --°C';
-        document.getElementById('kpiTempSub').textContent = 'Chưa đo trong chuồng';
-      }
+      updateActivePetSensorKPIs();
 
       const poopEntry = sortedLogs.find(function (l) { return l.poop && l.poop !== 'Chưa đi phân'; });
       if (poopEntry) {
@@ -3712,6 +3865,11 @@
         return '- Ngày ' + l.date + ' (' + (l.time || '') + '): Ăn [' + foods + '], Khoáng [' + supps + '], Cân nặng: ' + (l.weight ? l.weight + 'g' : 'Không cân') + ', Nhiệt chuồng: [' + tempStr + '], Phân: ' + (l.poop || 'Chưa rõ') + ', Trạng thái: ' + (l.status || 'Bình thường') + (l.notes ? ', Ghi chú: ' + l.notes : '');
       });
 
+      const liveW = getPetLiveSensorTemp(pet);
+      const liveSensorSummary = liveW !== null
+        ? ('Nhiệt độ vùng nóng đo trực tiếp từ cảm biến ESP32 hiện tại: ' + liveW + '°C')
+        : 'Chưa có dữ liệu cảm biến trực tiếp';
+
       const weatherSummary = (weatherData && typeof weatherData.temp === 'number')
         ? ('Nhiệt độ ngoài trời tại ' + (weatherData.placeName || 'khu vực') + ': ' + weatherData.temp + '°C, độ ẩm ' + (weatherData.humidity ?? 'N/A') + '%')
         : 'Chưa có dữ liệu thời tiết ngoài trời';
@@ -3727,7 +3885,8 @@
         '- Chiều dài: ' + (pet.length || 'Chưa cập nhật'),
         '- Chu kỳ cho ăn cài đặt: ' + (pet.cycleDays || 2) + ' ngày/lần lúc ' + (pet.feedTime || '19:00'),
         '- Ghi chú hồ sơ: ' + (pet.note || 'Không có'),
-        '- Môi trường hiện tại: ' + weatherSummary,
+        '- Cảm biến trong chuồng: ' + liveSensorSummary,
+        '- Môi trường bên ngoài: ' + weatherSummary,
         '',
         '=== NHẬT KÝ GẦN ĐÂY (TỐI ĐA 20 BẢN GHI MỚI NHẤT) ===',
         recent.length ? recent.join('\n') : 'Chưa có bản ghi nhật ký nào.',
@@ -3876,6 +4035,7 @@
     fetchLocalWeather(false);
     if (getEndpoint()) {
       pullFromCloud(false);
+      pullSensorsFromCloud(false);
     }
   </script>
 </body>
