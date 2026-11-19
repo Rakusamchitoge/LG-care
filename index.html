@@ -252,6 +252,26 @@
     .ppc-live-strip.ideal { background: #DCFCE7; color: #15803D; }
     .ppc-live-strip.hot { background: #FEE2E2; color: #B91C1C; }
     .ppc-live-strip.cold { background: #DBEAFE; color: #1D4ED8; }
+    .ppc-live-strip.err { background: #FEE2E2; color: #991B1B; }
+    .ppc-live-strip.stale { background: #FEF3C7; color: #92400E; }
+    .live-sensor-card.err {
+      border-color: #EF4444;
+      background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 55%);
+    }
+    .live-sensor-card.stale {
+      border-color: #F59E0B;
+      background: linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 55%);
+    }
+    .live-dot.err {
+      background: #DC2626;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+    }
+    .live-dot.stale {
+      background: #D97706;
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.22);
+    }
+    .weather-advice.err { background: #FEF2F2; border-left-color: #DC2626; color: #991B1B; }
+    .weather-advice.stale { background: #FFFBEB; border-left-color: #D97706; color: #92400E; }
 
     /* Weather & Temperature Advice Card */
     .weather-main {
@@ -1824,8 +1844,10 @@
     }
 
     /* ============================================================
-       ESP32-C3 LIVE SENSOR INTEGRATION (SỮA & CAM)
+       ESP32-C3 LIVE SENSOR INTEGRATION (SỮA & CAM + LỖI -127°C)
        ============================================================ */
+    let lastSensorErrorAlertAt = 0;
+
     function getSensorEndpoint() {
       if (!syncCfg.url || !syncCfg.code) return null;
       let base = syncCfg.url.trim().replace(/\/+$/, '').replace(/\.json$/, '');
@@ -1841,21 +1863,41 @@
         .trim();
     }
 
-    function getPetLiveSensorTemp(pet) {
-      if (!pet || !liveSensorData) return null;
+    function getPetSensorState(pet) {
+      if (!pet || !liveSensorData) return { status: 'none', temp: null };
       const n = normalizeVietnameseStr(pet.name);
-      let val = null;
+      let rawVal = null;
       if (n.indexOf('sua') !== -1 && typeof liveSensorData.sua_hot_temp === 'number') {
-        val = liveSensorData.sua_hot_temp;
+        rawVal = liveSensorData.sua_hot_temp;
       } else if (n.indexOf('cam') !== -1 && typeof liveSensorData.cam_hot_temp === 'number') {
-        val = liveSensorData.cam_hot_temp;
+        rawVal = liveSensorData.cam_hot_temp;
       } else {
         const idx = state.geckos.findIndex(function (g) { return g.id === pet.id; });
-        if (idx === 0 && typeof liveSensorData.sua_hot_temp === 'number') val = liveSensorData.sua_hot_temp;
-        else if (idx === 1 && typeof liveSensorData.cam_hot_temp === 'number') val = liveSensorData.cam_hot_temp;
+        if (idx === 0 && typeof liveSensorData.sua_hot_temp === 'number') rawVal = liveSensorData.sua_hot_temp;
+        else if (idx === 1 && typeof liveSensorData.cam_hot_temp === 'number') rawVal = liveSensorData.cam_hot_temp;
       }
-      if (typeof val !== 'number' || isNaN(val) || val <= -50 || val >= 80) return null;
-      return Math.round(val * 10) / 10;
+
+      if (typeof rawVal !== 'number' || isNaN(rawVal)) {
+        return { status: 'none', temp: null };
+      }
+
+      const rounded = Math.round(rawVal * 10) / 10;
+      if (rounded <= -50 || rounded >= 80) {
+        return { status: 'error', temp: rounded };
+      }
+
+      const ageMs = Date.now() - (liveSensorData.lastChangedAt || liveSensorData.fetchedAt || 0);
+      const isStale = Boolean(liveSensorData.lastChangedAt) && ageMs > 90000;
+      return {
+        status: isStale ? 'stale' : 'ok',
+        temp: rounded,
+        ageSec: Math.max(0, Math.round(ageMs / 1000))
+      };
+    }
+
+    function getPetLiveSensorTemp(pet) {
+      const st = getPetSensorState(pet);
+      return (st.status === 'ok' || st.status === 'stale') ? st.temp : null;
     }
 
     function classifyHotTemp(temp) {
@@ -1892,16 +1934,34 @@
         const data = await res.json();
         if (data && (typeof data.sua_hot_temp === 'number' || typeof data.cam_hot_temp === 'number')) {
           const now = new Date();
+          const nowMs = Date.now();
           const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+          const newSua = typeof data.sua_hot_temp === 'number' ? data.sua_hot_temp : null;
+          const newCam = typeof data.cam_hot_temp === 'number' ? data.cam_hot_temp : null;
+
+          const prev = liveSensorData || {};
+          const changed = (prev.sua_hot_temp !== newSua) || (prev.cam_hot_temp !== newCam) || !prev.lastChangedAt;
+
           saveSensorCache({
-            sua_hot_temp: typeof data.sua_hot_temp === 'number' ? data.sua_hot_temp : null,
-            cam_hot_temp: typeof data.cam_hot_temp === 'number' ? data.cam_hot_temp : null,
-            fetchedAt: Date.now(),
-            fetchedTimeStr: timeStr
+            sua_hot_temp: newSua,
+            cam_hot_temp: newCam,
+            fetchedAt: nowMs,
+            fetchedTimeStr: timeStr,
+            lastChangedAt: changed ? nowMs : prev.lastChangedAt,
+            lastChangedTimeStr: changed ? timeStr : (prev.lastChangedTimeStr || timeStr)
           });
+
           renderLiveSensorCard();
           updateActivePetSensorKPIs();
-          if (manualTrigger) {
+          renderAll();
+
+          const hasError = (typeof newSua === 'number' && (newSua <= -50 || newSua >= 80)) ||
+                           (typeof newCam === 'number' && (newCam <= -50 || newCam >= 80));
+
+          if (hasError && (manualTrigger || nowMs - lastSensorErrorAlertAt > 60000)) {
+            lastSensorErrorAlertAt = nowMs;
+            showToast('⚠️ CẢNH BÁO: Cảm biến báo -127°C (lỏng/tuột dây DS18B20)!', 'err');
+          } else if (manualTrigger) {
             showToast('Đã cập nhật nhiệt độ cảm biến ESP32!', 'ok');
           }
         } else if (manualTrigger) {
@@ -1918,8 +1978,8 @@
       const pet = getActivePet();
       if (!card || !box || !pet) return;
 
-      const liveTemp = getPetLiveSensorTemp(pet);
-      if (liveTemp === null) {
+      const st = getPetSensorState(pet);
+      if (st.status === 'none') {
         card.className = 'card live-sensor-card';
         const hint = getSensorEndpoint()
           ? 'Đang chờ ESP32-C3 gửi dữ liệu lên nhánh <code>/sensors/' + escapeHTML(syncCfg.code) + '</code>...'
@@ -1928,42 +1988,73 @@
         return;
       }
 
-      const info = classifyHotTemp(liveTemp);
-      card.className = 'card live-sensor-card ' + info.cls;
-      const timeNote = (liveSensorData && liveSensorData.fetchedTimeStr) ? 'Đọc lúc ' + liveSensorData.fetchedTimeStr : 'Đang hoạt động';
+      if (st.status === 'error') {
+        card.className = 'card live-sensor-card err';
+        const timeNote = (liveSensorData && liveSensorData.fetchedTimeStr) ? 'Đọc lúc ' + liveSensorData.fetchedTimeStr : 'Đang cảnh báo';
+        box.innerHTML =
+          '<div class="weather-main">' +
+            '<div>' +
+              '<div class="weather-temp-row">' +
+                '<span class="live-temp-big" style="color:var(--red);">' + st.temp.toFixed(1) + '°C</span>' +
+                '<span class="weather-cond" style="color:var(--red);">Lỗi đầu dò DS18B20</span>' +
+              '</div>' +
+              '<div class="weather-loc" style="color:#991B1B;font-weight:600;"><span class="live-dot err"></span>Chuồng ' + escapeHTML(pet.name) + ' • Mất tín hiệu đầu dò</div>' +
+            '</div>' +
+            '<span class="weather-badge wb-hot">⚠️ LỖI DÂY CẢM BIẾN</span>' +
+          '</div>' +
+          '<div class="weather-advice err"><b>Cảnh báo tuột hoặc lỏng dây cảm biến!</b> Đầu dò chuồng ' + escapeHTML(pet.name) + ' đang trả về <b>' + st.temp.toFixed(1) + '°C</b>. Hãy kiểm tra lại mối nối dây tín hiệu (GPIO 4), nguồn 3.3V hoặc dây GND của đầu dò này.</div>' +
+          '<div class="auto-sync-note">' +
+            '<span>📡 Nguồn: ESP32-C3 DS18B20</span>' +
+            '<span>🕒 ' + escapeHTML(timeNote) + '</span>' +
+          '</div>';
+        return;
+      }
+
+      const info = classifyHotTemp(st.temp);
+      const isStale = st.status === 'stale';
+      card.className = 'card live-sensor-card ' + (isStale ? 'stale' : info.cls);
+      const lastChangeNote = (liveSensorData && liveSensorData.lastChangedTimeStr) ? liveSensorData.lastChangedTimeStr : ((liveSensorData && liveSensorData.fetchedTimeStr) || '');
+      const staleWarning = isStale
+        ? '<div class="weather-advice stale" style="margin-bottom:8px;"><b>📴 Tín hiệu ESP32 tạm dừng cập nhật (' + Math.floor(st.ageSec / 60) + ' phút trước):</b> Mạch ESP32-C3 có thể đang mất Wi-Fi hoặc mất nguồn điện. Con số <b>' + st.temp.toFixed(1) + '°C</b> bên trên là dữ liệu cuối cùng ghi nhận lúc ' + escapeHTML(lastChangeNote) + '.</div>'
+        : '';
 
       box.innerHTML =
         '<div class="weather-main">' +
           '<div>' +
             '<div class="weather-temp-row">' +
-              '<span class="live-temp-big">' + liveTemp.toFixed(1) + '°C</span>' +
+              '<span class="live-temp-big">' + st.temp.toFixed(1) + '°C</span>' +
               '<span class="weather-cond">Đầu dò vùng nóng</span>' +
             '</div>' +
-            '<div class="weather-loc"><span class="live-dot"></span>Chuồng ' + escapeHTML(pet.name) + ' • Tự động cập nhật mỗi 10s</div>' +
+            '<div class="weather-loc"><span class="live-dot' + (isStale ? ' stale' : '') + '"></span>Chuồng ' + escapeHTML(pet.name) + (isStale ? ' • Mất tín hiệu mới' : ' • Tự động cập nhật mỗi 10s') + '</div>' +
           '</div>' +
-          '<span class="weather-badge ' + info.badgeClass + '">' + info.badgeText + '</span>' +
+          '<span class="weather-badge ' + (isStale ? 'wb-warm' : info.badgeClass) + '">' + (isStale ? '📴 Mất tín hiệu mới' : info.badgeText) + '</span>' +
         '</div>' +
+        staleWarning +
         '<div class="weather-advice ' + info.cls + '">' + info.advice + '</div>' +
         '<div class="auto-sync-note">' +
           '<span>📡 Nguồn: ESP32-C3 DS18B20</span>' +
-          '<span>🕒 ' + escapeHTML(timeNote) + '</span>' +
+          '<span>🕒 Cập nhật dữ liệu lúc ' + escapeHTML(lastChangeNote) + '</span>' +
         '</div>';
     }
 
     function updateActivePetSensorKPIs() {
       const pet = getActivePet();
       if (!pet) return;
-      const liveTemp = getPetLiveSensorTemp(pet);
+      const st = getPetSensorState(pet);
       const latestTempEntry = getLatestRecordedTemps(pet);
       const kpiEl = document.getElementById('kpiTemp');
       const kpiSubEl = document.getElementById('kpiTempSub');
       if (!kpiEl || !kpiSubEl) return;
 
-      if (liveTemp !== null) {
+      if (st.status === 'error') {
+        kpiEl.textContent = '⚠️ Lỗi ' + st.temp.toFixed(0) + '°C';
+        kpiEl.style.color = 'var(--red)';
+        kpiSubEl.textContent = 'Tuột/lỏng dây đầu dò!';
+      } else if (st.status === 'ok' || st.status === 'stale') {
         const logWarm = (latestTempEntry && typeof latestTempEntry.warmTemp === 'number') ? latestTempEntry.warmTemp + '°' : '--';
-        kpiEl.textContent = liveTemp.toFixed(1) + '° / ' + logWarm + 'C';
-        kpiEl.style.color = liveTemp > 33.5 ? 'var(--red)' : (liveTemp < 29.0 ? 'var(--blue)' : 'var(--green)');
-        kpiSubEl.textContent = 'Cảm biến Live / Nhật ký';
+        kpiEl.textContent = st.temp.toFixed(1) + '° / ' + logWarm + 'C';
+        kpiEl.style.color = st.status === 'stale' ? '#D97706' : (st.temp > 33.5 ? 'var(--red)' : (st.temp < 29.0 ? 'var(--blue)' : 'var(--green)'));
+        kpiSubEl.textContent = st.status === 'stale' ? 'Mất tín hiệu mới / Nhật ký' : 'Cảm biến Live / Nhật ký';
       } else if (latestTempEntry) {
         const wStr = typeof latestTempEntry.warmTemp === 'number' ? latestTempEntry.warmTemp + '°' : '--';
         const cStr = typeof latestTempEntry.coolTemp === 'number' ? latestTempEntry.coolTemp + '°' : '--';
@@ -3476,11 +3567,15 @@
         const genderStr = escapeHTML(g.gender || 'Chưa rõ');
         const morphStr = escapeHTML(g.morph || 'Normal');
 
-        const gLiveTemp = getPetLiveSensorTemp(g);
+        const gSensorSt = getPetSensorState(g);
         let liveStripHTML = '<div class="ppc-live-strip"><span>📡 Vùng nóng (Cảm biến)</span><span>Chưa kết nối</span></div>';
-        if (gLiveTemp !== null) {
-          const tInfo = classifyHotTemp(gLiveTemp);
-          liveStripHTML = '<div class="ppc-live-strip ' + tInfo.cls + '"><span>📡 Vùng nóng (Live)</span><span>' + gLiveTemp.toFixed(1) + ' °C</span></div>';
+        if (gSensorSt.status === 'error') {
+          liveStripHTML = '<div class="ppc-live-strip err"><span>⚠️ Lỗi cảm biến</span><span>' + gSensorSt.temp.toFixed(1) + ' °C (Lỏng dây)</span></div>';
+        } else if (gSensorSt.status === 'stale') {
+          liveStripHTML = '<div class="ppc-live-strip stale"><span>📴 Mất tín hiệu mới</span><span>' + gSensorSt.temp.toFixed(1) + ' °C</span></div>';
+        } else if (gSensorSt.status === 'ok') {
+          const tInfo = classifyHotTemp(gSensorSt.temp);
+          liveStripHTML = '<div class="ppc-live-strip ' + tInfo.cls + '"><span>📡 Vùng nóng (Live)</span><span>' + gSensorSt.temp.toFixed(1) + ' °C</span></div>';
         }
 
         const card = document.createElement('div');
