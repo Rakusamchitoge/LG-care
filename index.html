@@ -1362,12 +1362,12 @@
         </div>
 
         <!-- Thẻ Cảm biến vùng nóng ESP32-C3 thời gian thực -->
-        <div class="card live-sensor-card" id="liveSensorCard">
+        <div class="card live--card" id="liveCard">
           <div class="card-title" style="margin-bottom:8px;">
             <span>📡 Cảm biến vùng nóng (ESP32 Live)</span>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="pullSensorsFromCloud(true)">🔄 Đọc ngay</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="pullsFromCloud(true)">🔄 Đọc ngay</button>
           </div>
-          <div id="liveSensorContent">
+          <div id="liveContent">
             <div style="font-size:13px;color:var(--muted);">Chưa có dữ liệu từ cảm biến ESP32-C3.</div>
           </div>
         </div>
@@ -1466,7 +1466,7 @@
           <div class="temp-input-box">
             <div class="temp-box-head">
               <b>🌡️ Nhiệt độ đo trong chuồng</b>
-              <span id="logSensorAutoNote">Chuẩn: Nóng 30–32°C | Mát 24–26°C</span>
+              <span id="logAutoNote">Chuẩn: Nóng 30–32°C | Mát 24–26°C</span>
             </div>
             <div class="form-row-2">
               <div class="form-group" style="margin-bottom:8px;">
@@ -1744,13 +1744,13 @@
     const STORAGE_KEY = 'gecko_care_tracker_pwa_v1';
     const SYNC_CFG_KEY = 'gecko_care_sync_cfg_v1';
     const WEATHER_CACHE_KEY = 'gecko_care_weather_v2';
-    const SENSOR_CACHE_KEY = 'gecko_care_sensor_live_v1';
+    const _CACHE_KEY = 'gecko_care__live_v1';
     const WEATHER_AUTO_INTERVAL_MS = 15 * 60 * 1000;
 
     let state = loadState();
     let syncCfg = loadSyncCfg();
     let weatherData = loadWeatherCache();
-    let liveSensorData = loadSensorCache();
+    let liveData = loadCache();
     let editingPetId = null;
     let editingLogId = null;
     let swReg = null;
@@ -1808,9 +1808,9 @@
       } catch (e) {}
     }
 
-    function loadSensorCache() {
+    function loadCache() {
       try {
-        const raw = localStorage.getItem(SENSOR_CACHE_KEY);
+        const raw = localStorage.getItem(_CACHE_KEY);
         if (raw) return JSON.parse(raw);
       } catch (e) {}
       return null;
@@ -1829,8 +1829,7 @@
     function getSensorEndpoint() {
       if (!syncCfg.url || !syncCfg.code) return null;
       let base = syncCfg.url.trim().replace(/\/+$/, '').replace(/\.json$/, '');
-      const cleanCode = syncCfg.code.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
-      return base + '/sensors/' + cleanCode + '.json';
+      return base + '/sensors/' + encodeURIComponent(syncCfg.code.trim()) + '.json'
     }
 
     function normalizeVietnameseStr(s) {
