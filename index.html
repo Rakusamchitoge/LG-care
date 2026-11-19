@@ -1362,12 +1362,12 @@
         </div>
 
         <!-- Thẻ Cảm biến vùng nóng ESP32-C3 thời gian thực -->
-        <div class="card live--card" id="liveCard">
+        <div class="card live-sensor-card" id="liveSensorCard">
           <div class="card-title" style="margin-bottom:8px;">
             <span>📡 Cảm biến vùng nóng (ESP32 Live)</span>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="pullsFromCloud(true)">🔄 Đọc ngay</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="pullSensorsFromCloud(true)">🔄 Đọc ngay</button>
           </div>
-          <div id="liveContent">
+          <div id="liveSensorContent">
             <div style="font-size:13px;color:var(--muted);">Chưa có dữ liệu từ cảm biến ESP32-C3.</div>
           </div>
         </div>
@@ -1466,7 +1466,7 @@
           <div class="temp-input-box">
             <div class="temp-box-head">
               <b>🌡️ Nhiệt độ đo trong chuồng</b>
-              <span id="logAutoNote">Chuẩn: Nóng 30–32°C | Mát 24–26°C</span>
+              <span id="logSensorAutoNote">Chuẩn: Nóng 30–32°C | Mát 24–26°C</span>
             </div>
             <div class="form-row-2">
               <div class="form-group" style="margin-bottom:8px;">
@@ -1744,13 +1744,13 @@
     const STORAGE_KEY = 'gecko_care_tracker_pwa_v1';
     const SYNC_CFG_KEY = 'gecko_care_sync_cfg_v1';
     const WEATHER_CACHE_KEY = 'gecko_care_weather_v2';
-    const _CACHE_KEY = 'gecko_care__live_v1';
+    const SENSOR_CACHE_KEY = 'gecko_care_sensor_live_v1';
     const WEATHER_AUTO_INTERVAL_MS = 15 * 60 * 1000;
 
     let state = loadState();
     let syncCfg = loadSyncCfg();
     let weatherData = loadWeatherCache();
-    let liveData = loadCache();
+    let liveSensorData = loadSensorCache();
     let editingPetId = null;
     let editingLogId = null;
     let swReg = null;
@@ -1808,9 +1808,9 @@
       } catch (e) {}
     }
 
-    function loadCache() {
+    function loadSensorCache() {
       try {
-        const raw = localStorage.getItem(_CACHE_KEY);
+        const raw = localStorage.getItem(SENSOR_CACHE_KEY);
         if (raw) return JSON.parse(raw);
       } catch (e) {}
       return null;
@@ -1829,7 +1829,7 @@
     function getSensorEndpoint() {
       if (!syncCfg.url || !syncCfg.code) return null;
       let base = syncCfg.url.trim().replace(/\/+$/, '').replace(/\.json$/, '');
-      return base + '/sensors/' + encodeURIComponent(syncCfg.code.trim()) + '.json'
+      return base + '/sensors/' + encodeURIComponent(syncCfg.code.trim()) + '.json';
     }
 
     function normalizeVietnameseStr(s) {
@@ -2147,7 +2147,7 @@
 
     async function tryOpenMeteo(lat, lon) {
       const wRes = await fetchWithTimeout(
-        'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '¤t=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&timezone=auto',
+        'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&timezone=auto',
         {},
         6000
       );
