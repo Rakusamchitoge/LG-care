@@ -2025,7 +2025,7 @@
               '<span class="live-temp-big">' + st.temp.toFixed(1) + '°C</span>' +
               '<span class="weather-cond">Đầu dò vùng nóng</span>' +
             '</div>' +
-            '<div class="weather-loc"><span class="live-dot' + (isStale ? ' stale' : '') + '"></span>Chuồng ' + escapeHTML(pet.name) + (isStale ? ' • Mất tín hiệu mới' : ' • Tự động cập nhật mỗi 10s') + '</div>' +
+            '<div class="weather-loc"><span class="live-dot' + (isStale ? ' stale' : '') + '"></span>Chuồng ' + escapeHTML(pet.name) + (isStale ? ' • Mất tín hiệu mới' : ' • Tự động cập nhật mỗi 20s') + '</div>' +
           '</div>' +
           '<span class="weather-badge ' + (isStale ? 'wb-warm' : info.badgeClass) + '">' + (isStale ? '📴 Mất tín hiệu mới' : info.badgeText) + '</span>' +
         '</div>' +
@@ -2584,11 +2584,12 @@
         pullFromCloud(false);
       }
     }, 15000);
+    const SENSOR_AUTO_INTERVAL_MS = 20000;
     setInterval(function () {
       if (document.visibilityState === 'visible' && getSensorEndpoint()) {
         pullSensorsFromCloud(false);
       }
-    }, 10000);
+    }, SENSOR_AUTO_INTERVAL_MS);
     setInterval(function () {
       if (document.visibilityState === 'visible') {
         fetchLocalWeather(false);
