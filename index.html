@@ -65,87 +65,124 @@
 
   <style>
     :root {
-      --bg: #F8FAFC;
+      --bg: #F3F5F8;
       --card: #FFFFFF;
+      --surface-sub: #F8FAFC;
       --text: #0F172A;
+      --text-secondary: #334155;
       --muted: #64748B;
-      --border: #E2E8F0;
+      --border: rgba(15, 23, 42, 0.08);
+      --border-strong: #CBD5E1;
       --primary: #EA580C;
       --primary-dark: #C2410C;
+      --primary-grad: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
       --primary-soft: #FFF7ED;
-      --green: #16A34A;
-      --green-soft: #F0FDF4;
+      --green: #059669;
+      --green-soft: #ECFDF5;
       --blue: #0284C7;
       --blue-soft: #F0F9FF;
+      --amber: #D97706;
+      --amber-soft: #FFFBEB;
       --red: #DC2626;
       --red-soft: #FEF2F2;
+      --violet: #6D28D9;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.05);
+      --shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.14);
+      --radius-lg: 18px;
+      --radius-md: 13px;
+      --radius-sm: 10px;
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      padding-bottom: calc(76px + var(--safe-bottom));
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: calc(84px + var(--safe-bottom));
+      line-height: 1.45;
+    }
+
+    .tnum {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ================= TOPBAR & QUICK PET SWITCHER ================= */
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 30;
-      background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      z-index: 35;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
       padding: calc(10px + var(--safe-top)) 16px 10px;
     }
     .topbar-row {
-      max-width: 680px;
+      max-width: 720px;
       margin: 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
     }
     .brand {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       font-weight: 800;
       font-size: 17px;
+      letter-spacing: -0.2px;
       color: var(--text);
+      cursor: pointer;
     }
     .brand-badge {
-      background: var(--primary);
+      background: var(--primary-grad);
       color: #fff;
-      width: 30px;
-      height: 30px;
-      border-radius: 9px;
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
       display: grid;
       place-items: center;
-      font-size: 16px;
+      font-size: 18px;
+      box-shadow: 0 3px 8px rgba(234, 88, 12, 0.28);
+    }
+    .brand-sub {
+      display: block;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0;
+      margin-top: -2px;
     }
     .top-actions {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
     }
     .sync-pill {
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 700;
-      padding: 6px 10px;
+      padding: 6px 11px;
       border-radius: 999px;
-      border: 1px solid var(--border);
-      background: #F1F5F9;
+      border: 1px solid var(--border-strong);
+      background: var(--surface-sub);
       color: var(--muted);
       cursor: pointer;
+      transition: all 0.16s ease;
     }
+    .sync-pill:active { transform: scale(0.96); }
     .sync-pill.ok {
       background: var(--green-soft);
-      border-color: #BBF7D0;
+      border-color: #A7F3D0;
       color: var(--green);
     }
     .sync-pill.syncing {
@@ -159,88 +196,258 @@
       color: var(--red);
     }
     .btn-add-pet {
-      background: var(--primary-soft);
-      color: var(--primary);
-      border: 1px solid #FDBA74;
+      background: var(--primary-grad);
+      color: #FFFFFF;
+      border: none;
       font-weight: 700;
-      font-size: 13px;
-      padding: 6px 12px;
+      font-size: 12.5px;
+      padding: 7px 13px;
       border-radius: 999px;
       cursor: pointer;
+      box-shadow: 0 2px 6px rgba(234, 88, 12, 0.24);
+      transition: transform 0.14s ease, filter 0.14s ease;
     }
+    .btn-add-pet:active { transform: scale(0.96); }
 
+    /* Quick Pet Switcher Bar (1-tap switching across tabs) */
+    .quick-pet-bar-wrap {
+      max-width: 720px;
+      margin: 10px auto 0;
+      display: none;
+    }
+    .quick-pet-scroll {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .quick-pet-scroll::-webkit-scrollbar { display: none; }
+    .qp-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px 6px 8px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border-strong);
+      background: #FFFFFF;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .qp-chip:hover:not(.active) {
+      border-color: #94A3B8;
+      background: #F8FAFC;
+    }
+    .qp-chip.active {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary-dark);
+      box-shadow: 0 2px 6px rgba(234, 88, 12, 0.14);
+    }
+    .qp-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: #E2E8F0;
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+    }
+    .qp-chip.active .qp-avatar {
+      background: var(--primary);
+      color: #FFFFFF;
+    }
+    .qp-temp {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #F1F5F9;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .qp-temp.ideal { background: var(--green-soft); color: var(--green); }
+    .qp-temp.hot, .qp-temp.err { background: var(--red-soft); color: var(--red); }
+    .qp-temp.cold { background: var(--blue-soft); color: var(--blue); }
+    .qp-temp.stale { background: var(--amber-soft); color: var(--amber); }
+
+    /* ================= LAYOUT CONTAINER & CARDS ================= */
     .container {
-      max-width: 680px;
+      max-width: 720px;
       margin: 0 auto;
-      padding: 14px 14px 20px;
+      padding: 16px 14px 24px;
     }
 
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 15px;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
     }
     .card-title {
       font-size: 15px;
-      font-weight: 700;
+      font-weight: 800;
+      letter-spacing: -0.15px;
       margin: 0 0 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
+      color: var(--text);
+    }
+    .title-with-ico {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .title-ico {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      background: var(--surface-sub);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
     }
 
     .empty-box {
       text-align: center;
-      padding: 32px 18px;
+      padding: 40px 22px;
+      box-shadow: var(--shadow-md);
     }
-    .empty-icon { font-size: 46px; margin-bottom: 10px; }
-    .empty-box h2 { margin: 0 0 6px; font-size: 18px; }
-    .empty-box p { margin: 0 0 18px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .empty-icon {
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 14px;
+      border-radius: 22px;
+      background: var(--primary-soft);
+      border: 1px solid #FED7AA;
+      display: grid;
+      place-items: center;
+      font-size: 36px;
+    }
+    .empty-box h2 { margin: 0 0 8px; font-size: 19px; font-weight: 800; }
+    .empty-box p { margin: 0 0 20px; color: var(--muted); font-size: 14px; line-height: 1.55; }
 
-    /* Live ESP32 Sensor Banner & Card */
+    /* ================= LIVE ESP32 SENSOR CARD & GAUGE ================= */
     .live-sensor-card {
       border: 1.5px solid #FED7AA;
-      background: linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 55%);
+      background: linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 52%);
+      box-shadow: var(--shadow-md);
     }
     .live-sensor-card.hot {
       border-color: #FCA5A5;
-      background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 55%);
+      background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 52%);
     }
     .live-sensor-card.cold {
       border-color: #93C5FD;
-      background: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 55%);
+      background: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 52%);
     }
     .live-sensor-card.ideal {
       border-color: #86EFAC;
-      background: linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 55%);
+      background: linear-gradient(180deg, #ECFDF5 0%, #FFFFFF 52%);
+    }
+    .live-sensor-card.err {
+      border-color: #EF4444;
+      background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 52%);
+    }
+    .live-sensor-card.stale {
+      border-color: #FCD34D;
+      background: linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 52%);
     }
     .live-dot {
       display: inline-block;
       width: 8px;
       height: 8px;
       border-radius: 99px;
-      background: #16A34A;
-      margin-right: 5px;
-      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+      background: #10B981;
+      margin-right: 6px;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22);
+      animation: pulseLive 2.2s infinite;
     }
-    .live-dot.off {
-      background: #94A3B8;
-      box-shadow: none;
+    .live-dot.off { background: #94A3B8; box-shadow: none; animation: none; }
+    .live-dot.err { background: #DC2626; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25); }
+    .live-dot.stale { background: #D97706; box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.22); animation: none; }
+    @keyframes pulseLive {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
     }
+
     .live-temp-big {
-      font-size: 32px;
+      font-size: 36px;
       font-weight: 800;
-      line-height: 1.1;
+      letter-spacing: -0.8px;
+      line-height: 1.05;
       color: var(--text);
+      font-variant-numeric: tabular-nums;
     }
+
+    /* Visual Thermal Spectrum Bar (24°C - 38°C, ideal 29.0-33.5°C) */
+    .thermal-gauge-wrap {
+      margin: 12px 0 12px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .thermal-track {
+      position: relative;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #38BDF8 0%, #38BDF8 35.7%, #10B981 35.7%, #10B981 67.8%, #F97316 67.8%, #EF4444 100%);
+      overflow: visible;
+    }
+    .thermal-ideal-box {
+      position: absolute;
+      top: -3px;
+      bottom: -3px;
+      left: 35.7%;
+      width: 32.1%;
+      border: 1.5px solid #047857;
+      border-radius: 999px;
+      pointer-events: none;
+    }
+    .thermal-pin {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #FFFFFF;
+      border: 3.5px solid var(--text);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3);
+      transition: left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .thermal-scale {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-top: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+    .thermal-scale span.ideal-lbl {
+      color: var(--green);
+    }
+
     .ppc-live-strip {
       margin-top: 10px;
-      padding: 7px 10px;
-      border-radius: 10px;
+      padding: 8px 11px;
+      border-radius: 11px;
       font-size: 12px;
       font-weight: 700;
       display: flex;
@@ -248,38 +455,21 @@
       justify-content: space-between;
       background: #F1F5F9;
       color: #475569;
+      font-variant-numeric: tabular-nums;
     }
     .ppc-live-strip.ideal { background: #DCFCE7; color: #15803D; }
     .ppc-live-strip.hot { background: #FEE2E2; color: #B91C1C; }
     .ppc-live-strip.cold { background: #DBEAFE; color: #1D4ED8; }
     .ppc-live-strip.err { background: #FEE2E2; color: #991B1B; }
     .ppc-live-strip.stale { background: #FEF3C7; color: #92400E; }
-    .live-sensor-card.err {
-      border-color: #EF4444;
-      background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 55%);
-    }
-    .live-sensor-card.stale {
-      border-color: #F59E0B;
-      background: linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 55%);
-    }
-    .live-dot.err {
-      background: #DC2626;
-      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
-    }
-    .live-dot.stale {
-      background: #D97706;
-      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.22);
-    }
-    .weather-advice.err { background: #FEF2F2; border-left-color: #DC2626; color: #991B1B; }
-    .weather-advice.stale { background: #FFFBEB; border-left-color: #D97706; color: #92400E; }
 
-    /* Weather & Temperature Advice Card */
+    /* ================= WEATHER & ADVICE ================= */
     .weather-main {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
-      gap: 12px;
-      margin: 4px 0 10px;
+      gap: 10px;
+      margin: 2px 0 10px;
     }
     .weather-temp-row {
       display: flex;
@@ -290,13 +480,15 @@
     .weather-temp {
       font-size: 28px;
       font-weight: 800;
+      letter-spacing: -0.5px;
       line-height: 1.1;
       color: var(--text);
+      font-variant-numeric: tabular-nums;
     }
     .weather-cond {
       font-size: 13px;
       font-weight: 700;
-      color: #334155;
+      color: var(--text-secondary);
     }
     .weather-loc {
       font-size: 12px;
@@ -305,10 +497,11 @@
       line-height: 1.4;
     }
     .weather-badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       padding: 5px 10px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
       flex-shrink: 0;
     }
@@ -319,54 +512,67 @@
     .wb-hot { background: #FEE2E2; color: #B91C1C; }
 
     .weather-advice {
-      padding: 10px 12px;
-      border-radius: 11px;
+      padding: 11px 13px;
+      border-radius: 12px;
       font-size: 13px;
-      line-height: 1.5;
-      background: #F8FAFC;
+      line-height: 1.55;
+      background: var(--surface-sub);
       border-left: 4px solid var(--primary);
       color: #1E293B;
     }
     .weather-advice.cold { background: #EFF6FF; border-left-color: #2563EB; }
     .weather-advice.cool { background: #F0F9FF; border-left-color: #0284C7; }
-    .weather-advice.ideal { background: #F0FDF4; border-left-color: #16A34A; }
+    .weather-advice.ideal { background: #ECFDF5; border-left-color: #10B981; }
     .weather-advice.warm { background: #FFF7ED; border-left-color: #EA580C; }
     .weather-advice.hot { background: #FEF2F2; border-left-color: #DC2626; }
+    .weather-advice.err { background: #FEF2F2; border-left-color: #DC2626; color: #991B1B; }
+    .weather-advice.stale { background: #FFFBEB; border-left-color: #D97706; color: #92400E; }
 
     .auto-sync-note {
-      margin-top: 7px;
+      margin-top: 9px;
       font-size: 11px;
       color: var(--muted);
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 6px;
+      font-variant-numeric: tabular-nums;
     }
 
+    /* ================= FEEDING SCHEDULE CARD ================= */
+    .sched-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
     .sched-label {
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0.5px;
       color: var(--muted);
       text-transform: uppercase;
     }
     .sched-time {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 800;
-      margin: 4px 0;
+      letter-spacing: -0.4px;
+      margin: 4px 0 2px;
+      font-variant-numeric: tabular-nums;
     }
     .sched-time span { color: var(--primary); }
     .status-pill {
-      display: inline-block;
-      padding: 4px 10px;
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 11px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
       margin-top: 6px;
     }
-    .st-due { background: var(--primary-soft); color: var(--primary-dark); }
-    .st-late { background: var(--red-soft); color: var(--red); }
-    .st-ok { background: var(--green-soft); color: var(--green); }
+    .st-due { background: var(--primary-soft); color: var(--primary-dark); border: 1px solid #FED7AA; }
+    .st-late { background: var(--red-soft); color: var(--red); border: 1px solid #FECACA; }
+    .st-ok { background: var(--green-soft); color: var(--green); border: 1px solid #A7F3D0; }
     .st-none { background: #F1F5F9; color: var(--muted); }
 
     .btn-row-2 {
@@ -376,97 +582,173 @@
       margin-top: 8px;
     }
     .hint-box {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 10px;
-      background: #F8FAFC;
-      border: 1px dashed #CBD5E1;
+      margin-top: 11px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      background: var(--surface-sub);
+      border: 1px dashed var(--border-strong);
       font-size: 12px;
       color: #475569;
-      line-height: 1.45;
+      line-height: 1.5;
     }
 
+    /* ================= KPI METRIC CARDS ================= */
     .kpi-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
     .kpi {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px;
+      border-radius: 16px;
+      padding: 13px 14px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
     }
-    .kpi-lbl { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-    .kpi-val { font-size: 19px; font-weight: 800; margin: 4px 0 2px; }
-    .kpi-sub { font-size: 12px; color: var(--muted); }
+    .kpi-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .kpi-val {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      margin: 5px 0 3px;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi-sub {
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
 
+    /* ================= BUTTONS & FORMS ================= */
     .btn {
       width: 100%;
       border: none;
-      border-radius: 12px;
-      padding: 11px 14px;
+      border-radius: var(--radius-md);
+      padding: 12px 15px;
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 7px;
+      transition: transform 0.14s ease, filter 0.14s ease, background 0.14s ease;
     }
-    .btn-primary { background: var(--primary); color: #FFFFFF; }
-    .btn-primary:active { background: var(--primary-dark); }
-    .btn-secondary { background: #F1F5F9; color: var(--text); border: 1px solid var(--border); }
-    .btn-blue { background: var(--blue); color: #FFFFFF; }
-    .btn-danger { background: var(--red-soft); color: var(--red); }
-    .btn-sm { padding: 7px 11px; font-size: 12px; border-radius: 9px; width: auto; }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+    .btn-primary {
+      background: var(--primary-grad);
+      color: #FFFFFF;
+      box-shadow: 0 3px 10px rgba(234, 88, 12, 0.24);
+    }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.04); }
+    .btn-secondary {
+      background: var(--surface-sub);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+    }
+    .btn-secondary:hover:not(:disabled) { background: #F1F5F9; }
+    .btn-blue {
+      background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+      color: #FFFFFF;
+      box-shadow: 0 3px 10px rgba(2, 132, 199, 0.22);
+    }
+    .btn-danger { background: var(--red-soft); color: var(--red); border: 1px solid #FECACA; }
+    .btn-sm { padding: 7px 11px; font-size: 12px; border-radius: 9px; width: auto; box-shadow: none; }
 
-    .form-group { margin-bottom: 12px; }
+    .form-group { margin-bottom: 13px; }
     .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     label {
       display: block;
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 700;
-      color: #334155;
-      margin-bottom: 5px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
     }
     input, select, textarea {
       width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #CBD5E1;
-      border-radius: 10px;
+      padding: 11px 12px;
+      border: 1.5px solid var(--border-strong);
+      border-radius: 11px;
       font-size: 14px;
       font-family: inherit;
       background: #FFFFFF;
       color: var(--text);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     input:focus, select:focus, textarea:focus {
       outline: none;
       border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.14);
     }
 
     .temp-input-box {
       background: #FFF7ED;
-      border: 1px solid #FED7AA;
-      border-radius: 12px;
-      padding: 10px 10px 2px;
-      margin-bottom: 12px;
+      border: 1.5px solid #FED7AA;
+      border-radius: 14px;
+      padding: 12px 12px 4px;
+      margin-bottom: 14px;
     }
     .temp-box-head {
-      font-size: 12px;
-      font-weight: 700;
+      font-size: 12.5px;
+      font-weight: 800;
       color: var(--primary-dark);
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 6px;
+      flex-wrap: wrap;
     }
     .temp-box-head span {
-      font-weight: 500;
+      font-weight: 600;
       font-size: 11px;
-      color: #7C2D12;
+      color: #9A3412;
     }
+    .btn-fill-sensor {
+      background: #FFFFFF;
+      border: 1px solid #FDBA74;
+      color: var(--primary-dark);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .btn-fill-sensor:active { transform: scale(0.95); }
+
+    /* Quick Feeder Presets */
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 9px;
+    }
+    .preset-btn {
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid #CBD5E1;
+      background: #FFFFFF;
+      color: var(--text-secondary);
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+    .preset-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary-dark);
+      background: var(--primary-soft);
+    }
+    .preset-btn:active { transform: scale(0.95); }
 
     .feeder-row {
       display: grid;
@@ -474,9 +756,9 @@
       gap: 6px;
       align-items: center;
       margin-bottom: 8px;
-      background: #F8FAFC;
+      background: var(--surface-sub);
       padding: 8px;
-      border-radius: 10px;
+      border-radius: 12px;
       border: 1px solid var(--border);
     }
     .qty-box {
@@ -485,37 +767,36 @@
       gap: 4px;
     }
     .qty-btn {
-      width: 32px;
-      height: 36px;
-      border-radius: 8px;
-      border: 1px solid #CBD5E1;
+      width: 34px;
+      height: 38px;
+      border-radius: 9px;
+      border: 1px solid var(--border-strong);
       background: #FFFFFF;
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
+      transition: background 0.12s ease;
     }
+    .qty-btn:active { background: #E2E8F0; }
     .qty-input {
       width: 46px;
       text-align: center;
-      padding: 7px 4px;
-      font-weight: 700;
+      padding: 8px 4px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
     }
-    .btn-del-row {
+    .btn-del-row, .btn-edit-row {
       background: none;
       border: none;
-      color: var(--red);
       font-size: 16px;
-      padding: 4px 6px;
+      padding: 6px;
+      border-radius: 8px;
       cursor: pointer;
     }
-    .btn-edit-row {
-      background: none;
-      border: none;
-      color: var(--blue);
-      font-size: 16px;
-      padding: 4px 6px;
-      cursor: pointer;
-    }
+    .btn-del-row { color: var(--red); }
+    .btn-del-row:hover { background: var(--red-soft); }
+    .btn-edit-row { color: var(--blue); }
+    .btn-edit-row:hover { background: var(--blue-soft); }
     .log-actions {
       display: flex;
       align-items: center;
@@ -529,65 +810,75 @@
       gap: 8px;
     }
     .chip {
-      padding: 8px 13px;
+      padding: 8px 14px;
       border-radius: 999px;
-      border: 1px solid #CBD5E1;
+      border: 1.5px solid var(--border-strong);
       background: #FFFFFF;
       font-size: 13px;
-      font-weight: 600;
-      color: #334155;
+      font-weight: 700;
+      color: var(--text-secondary);
       cursor: pointer;
+      transition: all 0.14s ease;
     }
     .chip.selected {
       background: var(--primary-soft);
       border-color: var(--primary);
       color: var(--primary-dark);
+      box-shadow: 0 1px 4px rgba(234, 88, 12, 0.15);
     }
 
+    /* ================= LOG HISTORY ITEMS ================= */
     .log-item {
-      padding: 12px 0;
+      padding: 13px 0;
       border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 10px;
     }
-    .log-item:last-child { border-bottom: none; }
-    .log-date { font-size: 12px; font-weight: 700; color: var(--muted); }
-    .log-main { font-size: 14px; font-weight: 700; margin: 3px 0; }
-    .log-sub { font-size: 12px; color: #475569; line-height: 1.45; }
+    .log-item:last-child { border-bottom: none; padding-bottom: 2px; }
+    .log-date {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .log-main { font-size: 14.5px; font-weight: 800; margin: 3px 0; color: var(--text); }
+    .log-sub { font-size: 12.5px; color: #475569; line-height: 1.5; }
     .temp-pill-inline {
       display: inline-block;
-      margin-top: 3px;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 11px;
+      margin: 4px 0 2px;
+      padding: 3px 9px;
+      border-radius: 7px;
+      font-size: 11.5px;
       font-weight: 700;
       background: #F1F5F9;
       color: #334155;
+      font-variant-numeric: tabular-nums;
     }
     .temp-pill-inline.warn {
       background: var(--red-soft);
       color: var(--red);
     }
 
+    /* ================= CHARTS ================= */
     .chart-wrap {
       width: 100%;
       overflow: hidden;
-      background: #F8FAFC;
-      border-radius: 12px;
-      padding: 8px;
+      background: var(--surface-sub);
+      border-radius: 14px;
+      padding: 10px;
       border: 1px solid var(--border);
     }
     .chart-tip {
-      margin-top: 8px;
-      font-size: 12px;
-      font-weight: 600;
+      margin-top: 9px;
+      font-size: 12.5px;
+      font-weight: 700;
       color: var(--primary-dark);
-      min-height: 18px;
+      min-height: 19px;
       text-align: center;
+      font-variant-numeric: tabular-nums;
     }
-
     .chart-legend {
       display: flex;
       flex-wrap: wrap;
@@ -613,8 +904,8 @@
       display: inline-flex;
       background: #F1F5F9;
       border: 1px solid var(--border);
-      border-radius: 9px;
-      padding: 2px;
+      border-radius: 10px;
+      padding: 3px;
       gap: 2px;
       flex-shrink: 0;
     }
@@ -622,31 +913,33 @@
       border: none;
       background: transparent;
       color: var(--muted);
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 700;
-      padding: 4px 9px;
+      padding: 4px 10px;
       border-radius: 7px;
       cursor: pointer;
     }
     .seg-btn.active {
       background: #FFFFFF;
       color: var(--primary);
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
     }
 
+    /* ================= MOBILE BOTTOM NAVIGATION ================= */
     .bottom-nav {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      z-index: 30;
-      background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      z-index: 35;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid var(--border);
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       padding: 6px 4px calc(6px + var(--safe-bottom));
+      box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.04);
     }
     .nav-btn {
       background: none;
@@ -654,20 +947,52 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2px;
+      justify-content: center;
+      gap: 3px;
       font-size: 11px;
       font-weight: 600;
       color: var(--muted);
       cursor: pointer;
       padding: 4px 0;
+      transition: color 0.15s ease, transform 0.12s ease;
     }
-    .nav-btn.active { color: var(--primary); font-weight: 700; }
-    .nav-ico { font-size: 18px; }
+    .nav-btn:active { transform: scale(0.94); }
+    .nav-btn.active { color: var(--primary); font-weight: 800; }
+    .nav-ico {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+    }
+    .nav-ico svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .nav-btn.nav-center .nav-ico {
+      width: 34px;
+      height: 26px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+    .nav-btn.nav-center.active .nav-ico {
+      background: var(--primary-grad);
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+    }
 
+    /* ================= MODALS & TOAST ================= */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.5);
+      background: rgba(15, 23, 42, 0.52);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
       z-index: 50;
       display: none;
       align-items: flex-end;
@@ -678,46 +1003,60 @@
       background: #FFFFFF;
       width: 100%;
       max-width: 540px;
-      border-radius: 20px 20px 0 0;
-      padding: 18px 16px calc(20px + var(--safe-bottom));
+      border-radius: 22px 22px 0 0;
+      padding: 20px 18px calc(22px + var(--safe-bottom));
       max-height: 90vh;
       overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      animation: sheetSlideUp 0.22s cubic-bezier(0.2, 0.85, 0.3, 1);
+    }
+    @keyframes sheetSlideUp {
+      from { transform: translateY(28px); opacity: 0.6; }
+      to { transform: translateY(0); opacity: 1; }
     }
     @media (min-width: 600px) {
       .modal-backdrop { align-items: center; }
-      .modal-sheet { border-radius: 18px; padding-bottom: 20px; }
+      .modal-sheet { border-radius: 20px; padding-bottom: 22px; }
     }
 
     .toast {
       position: fixed;
       top: calc(14px + var(--safe-top));
       left: 50%;
-      transform: translateX(-50%) translateY(-120%);
+      transform: translateX(-50%) translateY(-130%);
       background: #0F172A;
       color: #FFFFFF;
-      padding: 10px 16px;
-      border-radius: 12px;
+      padding: 11px 18px;
+      border-radius: 14px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       z-index: 60;
       max-width: 92vw;
       text-align: center;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-      transition: transform 0.25s ease;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
     .toast.show { transform: translateX(-50%) translateY(0); }
     .toast.err { background: var(--red); }
     .toast.ok { background: var(--green); }
 
     .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
+    .tab-pane.active {
+      display: block;
+      animation: paneFade 0.18s ease-out;
+    }
+    @keyframes paneFade {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
     .sidebar-nav, .sidebar-title, .sidebar-footer { display: none; }
 
+    /* ================= DESKTOP RESPONSIVE SIDEBAR & GRID ================= */
     @media (min-width: 960px) {
       body {
-        padding-bottom: 32px;
-        background: #F1F5F9;
+        padding-bottom: 36px;
+        background: #EEF2F6;
       }
 
       .topbar {
@@ -725,7 +1064,7 @@
         top: 0;
         left: 0;
         bottom: 0;
-        width: 260px;
+        width: 268px;
         border-bottom: none;
         border-right: 1px solid var(--border);
         background: #FFFFFF;
@@ -739,21 +1078,21 @@
       .topbar-row {
         flex-direction: column;
         align-items: stretch;
-        gap: 12px;
+        gap: 14px;
         margin: 0;
         max-width: none;
       }
 
       .brand {
         font-size: 20px;
-        padding-bottom: 12px;
+        padding-bottom: 14px;
         border-bottom: 1px solid var(--border);
       }
       .brand-badge {
-        width: 36px;
-        height: 36px;
+        width: 38px;
+        height: 38px;
         font-size: 20px;
-        border-radius: 10px;
+        border-radius: 11px;
       }
 
       .top-actions {
@@ -763,9 +1102,23 @@
       }
       .sync-pill, .btn-add-pet {
         text-align: center;
-        padding: 9px 12px;
+        padding: 10px 12px;
         font-size: 13px;
-        border-radius: 11px;
+        border-radius: 12px;
+      }
+
+      .quick-pet-bar-wrap {
+        margin: 14px 0 0;
+        max-width: none;
+      }
+      .quick-pet-scroll {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .qp-chip {
+        justify-content: space-between;
+        border-radius: 12px;
+        padding: 8px 10px;
       }
 
       .sidebar-title {
@@ -781,7 +1134,7 @@
       .sidebar-nav {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 5px;
       }
       .side-nav-btn {
         width: 100%;
@@ -791,7 +1144,7 @@
         padding: 11px 14px;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 11px;
         font-size: 14px;
         font-weight: 600;
         color: #475569;
@@ -810,16 +1163,26 @@
         font-weight: 700;
       }
       .side-nav-ico {
-        font-size: 18px;
-        width: 22px;
-        text-align: center;
+        width: 20px;
+        height: 20px;
+        display: grid;
+        place-items: center;
+      }
+      .side-nav-ico svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
 
       .sidebar-footer {
         display: block;
         margin-top: auto;
         padding-top: 16px;
-        font-size: 11px;
+        font-size: 11.5px;
         color: var(--muted);
         line-height: 1.5;
       }
@@ -829,7 +1192,7 @@
       }
 
       .container {
-        margin-left: 260px;
+        margin-left: 268px;
         max-width: 1240px;
         padding: 24px 28px 36px;
       }
@@ -893,33 +1256,53 @@
       }
     }
 
+    /* ================= HERO PROFILE CARD ================= */
     .profile-card-box {
       padding: 0;
       overflow: hidden;
+      box-shadow: var(--shadow-md);
     }
-    .profile-card-body {
-      padding: 16px 16px 14px;
-    }
-    .profile-card-header {
+    .profile-hero-top {
+      background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+      padding: 15px 16px;
+      border-bottom: 1px solid #FED7AA;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 10px;
     }
-    .profile-card-code {
+    .profile-hero-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .profile-monogram {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: var(--primary-grad);
+      color: #FFFFFF;
       font-size: 18px;
       font-weight: 800;
-      letter-spacing: 0.4px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 3px 8px rgba(234, 88, 12, 0.28);
+      flex-shrink: 0;
+    }
+    .profile-card-code {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
       text-transform: uppercase;
       color: var(--text);
       margin: 0;
-      line-height: 1.25;
+      line-height: 1.2;
     }
     .profile-card-species {
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
-      color: var(--muted);
-      margin-top: 3px;
+      color: #9A3412;
+      margin-top: 2px;
     }
     .profile-card-badge {
       display: inline-flex;
@@ -927,27 +1310,28 @@
       gap: 5px;
       padding: 5px 10px;
       border-radius: 999px;
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 700;
-      background: var(--green-soft);
-      color: var(--green);
-      border: 1px solid #BBF7D0;
+      background: #FFFFFF;
+      color: var(--primary-dark);
+      border: 1px solid #FDBA74;
       flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .profile-card-body {
+      padding: 14px 16px 14px;
     }
     .profile-spec-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px 16px;
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px solid var(--border);
+      gap: 11px 16px;
     }
     .profile-spec-item.full {
       grid-column: 1 / -1;
     }
     .profile-spec-lbl {
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--muted);
       margin-bottom: 2px;
     }
@@ -956,39 +1340,37 @@
       font-weight: 700;
       color: var(--text);
       line-height: 1.35;
+      font-variant-numeric: tabular-nums;
     }
     .profile-spec-val.muted-val {
       color: var(--muted);
       font-weight: 600;
     }
+    .profile-quick-cta {
+      margin-top: 14px;
+    }
     .profile-action-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       border-top: 1px solid var(--border);
-      background: #F8FAFC;
+      background: var(--surface-sub);
     }
     .profile-action-btn {
       background: transparent;
       border: none;
       border-right: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      padding: 11px 10px;
+      padding: 11px 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #334155;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
       cursor: pointer;
       transition: background 0.15s ease, color 0.15s ease;
     }
-    .profile-action-btn:nth-child(2n) {
-      border-right: none;
-    }
-    .profile-action-btn:nth-last-child(-n+2) {
-      border-bottom: none;
-    }
+    .profile-action-btn:last-child { border-right: none; }
     .profile-action-btn:hover {
       background: #F1F5F9;
       color: var(--primary-dark);
@@ -998,8 +1380,8 @@
       color: var(--red);
     }
     .profile-action-btn svg {
-      width: 16px;
-      height: 16px;
+      width: 15px;
+      height: 15px;
       stroke: currentColor;
       fill: none;
       stroke-width: 2;
@@ -1007,6 +1389,7 @@
       stroke-linejoin: round;
     }
 
+    /* ================= GECKO DIRECTORY GRID ================= */
     .gecko-dir-header {
       display: flex;
       align-items: center;
@@ -1044,12 +1427,12 @@
     .pet-profile-card {
       background: #FFFFFF;
       border: 1.5px solid var(--border);
-      border-radius: 16px;
+      border-radius: var(--radius-lg);
       overflow: hidden;
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
       text-align: left;
-      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      box-shadow: var(--shadow-sm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -1057,14 +1440,14 @@
     .pet-profile-card:hover {
       border-color: var(--primary);
       transform: translateY(-2px);
-      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
     }
     .pet-profile-card.active {
       border-color: var(--primary);
       box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.16);
     }
     .ppc-body {
-      padding: 15px 16px 13px;
+      padding: 15px 16px 14px;
     }
     .ppc-head {
       display: flex;
@@ -1085,16 +1468,16 @@
       font-weight: 700;
       padding: 4px 10px;
       border-radius: 999px;
-      background: var(--green-soft);
-      color: var(--green);
-      border: 1px solid #BBF7D0;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      border: 1px solid #FED7AA;
       flex-shrink: 0;
       display: inline-flex;
       align-items: center;
       gap: 4px;
     }
     .ppc-species {
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       color: var(--muted);
       margin-top: 2px;
@@ -1112,7 +1495,7 @@
     }
     .ppc-lbl {
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--muted);
       margin-bottom: 2px;
     }
@@ -1121,6 +1504,7 @@
       font-weight: 700;
       color: var(--text);
       line-height: 1.35;
+      font-variant-numeric: tabular-nums;
     }
     .ppc-val.muted {
       color: var(--muted);
@@ -1128,15 +1512,14 @@
     }
     .ppc-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(4, 1fr);
       border-top: 1px solid var(--border);
-      background: #F8FAFC;
+      background: var(--surface-sub);
     }
     .ppc-act-btn {
       background: transparent;
       border: none;
       border-right: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
       padding: 10px 0;
       display: flex;
       align-items: center;
@@ -1145,8 +1528,7 @@
       cursor: pointer;
       transition: background 0.15s ease, color 0.15s ease;
     }
-    .ppc-act-btn:nth-child(2n) { border-right: none; }
-    .ppc-act-btn:nth-last-child(-n+2) { border-bottom: none; }
+    .ppc-act-btn:last-child { border-right: none; }
     .ppc-act-btn:hover {
       background: #E2E8F0;
       color: var(--primary-dark);
@@ -1179,9 +1561,11 @@
       }
     }
 
+    /* ================= AI HEALTH ASSISTANT CARD ================= */
     .ai-card {
       border: 1.5px solid #DDD6FE;
-      background: linear-gradient(180deg, #FAF5FF 0%, #FFFFFF 42%);
+      background: linear-gradient(180deg, #F5F3FF 0%, #FFFFFF 45%);
+      box-shadow: var(--shadow-md);
     }
     .ai-header-actions {
       display: flex;
@@ -1193,7 +1577,7 @@
       background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%);
       color: #FFFFFF;
       border: none;
-      box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
+      box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25);
     }
     .btn-ai:hover:not(:disabled) {
       filter: brightness(1.06);
@@ -1204,37 +1588,40 @@
     }
     .ai-result-box {
       margin-top: 12px;
-      padding: 12px 13px;
-      border-radius: 12px;
+      padding: 14px 15px;
+      border-radius: 14px;
       background: #FFFFFF;
       border: 1px solid #E9D5FF;
       font-size: 13.5px;
-      line-height: 1.6;
+      line-height: 1.65;
       color: #1E293B;
     }
     .ai-result-box h4 {
-      margin: 10px 0 4px;
+      margin: 12px 0 6px;
       font-size: 14px;
       font-weight: 800;
       color: #5B21B6;
+      padding-bottom: 3px;
+      border-bottom: 1px solid #F3E8FF;
     }
     .ai-result-box h4:first-child {
       margin-top: 0;
     }
     .ai-result-box ul {
-      margin: 4px 0 8px;
+      margin: 4px 0 10px;
       padding-left: 18px;
     }
     .ai-result-box li {
-      margin-bottom: 4px;
+      margin-bottom: 5px;
     }
     .ai-meta-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      margin-top: 8px;
+      margin-top: 9px;
       font-size: 11px;
+      font-weight: 600;
       color: var(--muted);
     }
     .ai-spinner {
@@ -1259,9 +1646,12 @@
 
   <header class="topbar">
     <div class="topbar-row">
-      <div class="brand">
+      <div class="brand" onclick="if(state.geckos.length) switchTab('geckos')">
         <div class="brand-badge">🦎</div>
-        <span>Gecko Care</span>
+        <div>
+          <span>Gecko Care</span>
+          <span class="brand-sub">Smart Terrarium & Health</span>
+        </div>
       </div>
       <div class="top-actions">
         <button type="button" id="syncBadge" class="sync-pill" onclick="openSyncModal()">☁️ Chưa đồng bộ</button>
@@ -1269,29 +1659,49 @@
       </div>
     </div>
 
+    <!-- Thanh chuyển nhanh hồ sơ 1 chạm -->
+    <div id="quickPetBarWrap" class="quick-pet-bar-wrap">
+      <div id="quickPetScroll" class="quick-pet-scroll"></div>
+    </div>
+
     <div id="sidebarNavWrap" style="display:none;">
       <div class="sidebar-title">Bảng điều khiển</div>
       <nav class="sidebar-nav">
         <button type="button" class="side-nav-btn active" data-tab="geckos" onclick="switchTab('geckos')">
-          <span class="side-nav-ico">🦎</span><span>Danh sách Gecko</span>
+          <span class="side-nav-ico">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
+          </span>
+          <span>Danh sách Gecko</span>
         </button>
         <button type="button" class="side-nav-btn" data-tab="overview" onclick="switchTab('overview')">
-          <span class="side-nav-ico">📊</span><span>Tổng quan</span>
+          <span class="side-nav-ico">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          </span>
+          <span>Tổng quan</span>
         </button>
         <button type="button" class="side-nav-btn" data-tab="log" onclick="switchTab('log')">
-          <span class="side-nav-ico">📝</span><span>Ghi nhật ký</span>
+          <span class="side-nav-ico">
+            <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          </span>
+          <span>Ghi nhật ký</span>
         </button>
         <button type="button" class="side-nav-btn" data-tab="weight" onclick="switchTab('weight')">
-          <span class="side-nav-ico">📈</span><span>Thống kê</span>
+          <span class="side-nav-ico">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          </span>
+          <span>Thống kê</span>
         </button>
         <button type="button" class="side-nav-btn" data-tab="backup" onclick="switchTab('backup')">
-          <span class="side-nav-ico">☁️</span><span>Đồng bộ & Sao lưu</span>
+          <span class="side-nav-ico">
+            <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+          </span>
+          <span>Đồng bộ & Sao lưu</span>
         </button>
       </nav>
     </div>
 
     <div class="sidebar-footer">
-      💻 Giao diện PC & 📱 Mobile tự động thích ứng • Cảm biến ESP32 & Firebase thời gian thực.
+      💻 PC & 📱 Mobile tự động thích ứng • Cảm biến ESP32-C3 & Firebase thời gian thực.
     </div>
   </header>
 
@@ -1309,8 +1719,8 @@
       <section id="tab-geckos" class="tab-pane active">
         <div class="gecko-dir-header">
           <div>
-            <h1 class="gecko-dir-title">🦎 Danh sách Gecko của bạn</h1>
-            <div class="gecko-dir-sub">Chạm vào thẻ của từng bé để xem tổng quan, cảm biến nhiệt độ & nhật ký</div>
+            <h1 class="gecko-dir-title">Danh sách Gecko của bạn</h1>
+            <div class="gecko-dir-sub">Chạm vào thẻ từng bé để xem cảm biến nhiệt độ, lịch ăn & nhật ký</div>
           </div>
           <button type="button" class="btn btn-primary btn-sm" onclick="openPetModal(false)">+ Thêm bé mới</button>
         </div>
@@ -1319,152 +1729,162 @@
 
       <section id="tab-overview" class="tab-pane">
         <div class="ov-back-bar">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="switchTab('geckos')">← Danh sách tất cả bé Gecko</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="switchTab('geckos')">← Tất cả bé Gecko</button>
           <span id="ovActiveHint" style="font-size:12px;font-weight:700;color:var(--muted);"></span>
         </div>
+
         <div class="ov-col-left">
-        <div class="card profile-card-box">
-          <div class="profile-card-body">
-            <div class="profile-card-header">
+          <!-- Hero Profile Card -->
+          <div class="card profile-card-box">
+            <div class="profile-hero-top">
+              <div class="profile-hero-left">
+                <div id="ovMonogram" class="profile-monogram">🦎</div>
+                <div>
+                  <h1 id="ovName" class="profile-card-code">-</h1>
+                  <div class="profile-card-species">Leopard Gecko</div>
+                </div>
+              </div>
+              <span id="ovCycleBadge" class="profile-card-badge">2 ngày/lần • 19:00</span>
+            </div>
+
+            <div class="profile-card-body">
+              <div class="profile-spec-grid">
+                <div class="profile-spec-item">
+                  <div class="profile-spec-lbl">Tuổi / Ngày nở</div>
+                  <div id="ovSpecAge" class="profile-spec-val muted-val">Chưa cập nhật</div>
+                </div>
+                <div class="profile-spec-item">
+                  <div class="profile-spec-lbl">Giới tính</div>
+                  <div id="ovSpecGender" class="profile-spec-val">-</div>
+                </div>
+                <div class="profile-spec-item">
+                  <div class="profile-spec-lbl">Cân nặng</div>
+                  <div id="ovSpecWeight" class="profile-spec-val muted-val">N/A</div>
+                </div>
+                <div class="profile-spec-item">
+                  <div class="profile-spec-lbl">Chiều dài</div>
+                  <div id="ovSpecLengthCycle" class="profile-spec-val muted-val">N/A</div>
+                </div>
+                <div class="profile-spec-item full">
+                  <div class="profile-spec-lbl">Morph (Dòng gen)</div>
+                  <div id="ovSpecMorph" class="profile-spec-val">-</div>
+                </div>
+                <div id="ovSpecNoteWrap" class="profile-spec-item full" style="display:none;">
+                  <div class="profile-spec-lbl">Ghi chú chăm sóc</div>
+                  <div id="ovSpecNote" class="profile-spec-val" style="font-weight:600;color:#475569;"></div>
+                </div>
+              </div>
+
+              <div class="profile-quick-cta">
+                <button type="button" class="btn btn-primary" onclick="switchTab('log')">📝 Ghi nhật ký bữa ăn & thể trạng</button>
+              </div>
+            </div>
+
+            <div class="profile-action-grid">
+              <button type="button" class="profile-action-btn" onclick="switchTab('weight')" title="Xem thống kê & biểu đồ">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                <span>Biểu đồ</span>
+              </button>
+              <button type="button" class="profile-action-btn" onclick="openPetModal(true)" title="Sửa hồ sơ bé">
+                <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                <span>Sửa hồ sơ</span>
+              </button>
+              <button type="button" class="profile-action-btn danger" onclick="deleteCurrentPet()" title="Xóa hồ sơ">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <span>Xóa bé</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Thẻ Cảm biến vùng nóng ESP32-C3 thời gian thực -->
+          <div class="card live-sensor-card" id="liveSensorCard">
+            <div class="card-title" style="margin-bottom:8px;">
+              <span class="title-with-ico"><span class="title-ico">📡</span>Cảm biến vùng nóng (ESP32)</span>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="pullSensorsFromCloud(true)">🔄 Đọc ngay</button>
+            </div>
+            <div id="liveSensorContent">
+              <div style="font-size:13px;color:var(--muted);">Chưa có dữ liệu từ cảm biến ESP32-C3.</div>
+            </div>
+          </div>
+
+          <!-- Thẻ Thời tiết tự động & Lời khuyên chăm sóc -->
+          <div class="card" id="weatherCard">
+            <div class="card-title" style="margin-bottom:8px;">
+              <span class="title-with-ico"><span class="title-ico">🌡️</span>Thời tiết & Nhiệt độ khu vực</span>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnRefreshWeather" onclick="fetchLocalWeather(true)">🔄 Làm mới</button>
+            </div>
+            <div id="weatherContent">
+              <div style="font-size:13px;color:var(--muted);">Đang tự động cập nhật thời tiết tại vị trí của bạn...</div>
+            </div>
+          </div>
+
+          <!-- Thẻ Lịch cho ăn tiếp theo -->
+          <div class="card">
+            <div class="sched-top">
               <div>
-                <h1 id="ovName" class="profile-card-code">-</h1>
-                <div class="profile-card-species">Leopard gecko</div>
+                <div class="sched-label">LỊCH CHO ĂN TIẾP THEO</div>
+                <div id="schedDateTime" class="sched-time">--/--/---- • <span>19:00</span></div>
+                <div id="schedSub" style="font-size:13px; color:var(--muted);">Chưa có bữa ăn nào được ghi nhận</div>
               </div>
-              <span id="ovCycleBadge" class="profile-card-badge">🪪 Đang theo dõi</span>
+              <span id="schedBadge" class="status-pill st-none">Chưa có bữa ăn</span>
             </div>
 
-            <div class="profile-spec-grid">
-              <div class="profile-spec-item">
-                <div class="profile-spec-lbl">Tuổi / Ngày nở</div>
-                <div id="ovSpecAge" class="profile-spec-val muted-val">Chưa cập nhật</div>
-              </div>
-              <div class="profile-spec-item">
-                <div class="profile-spec-lbl">Giới tính</div>
-                <div id="ovSpecGender" class="profile-spec-val">-</div>
-              </div>
-              <div class="profile-spec-item">
-                <div class="profile-spec-lbl">Cân nặng</div>
-                <div id="ovSpecWeight" class="profile-spec-val muted-val">N/A</div>
-              </div>
-              <div class="profile-spec-item">
-                <div class="profile-spec-lbl">Chiều dài</div>
-                <div id="ovSpecLengthCycle" class="profile-spec-val muted-val">N/A</div>
-              </div>
-              <div class="profile-spec-item full">
-                <div class="profile-spec-lbl">Morph (Dòng gen)</div>
-                <div id="ovSpecMorph" class="profile-spec-val">-</div>
-              </div>
-              <div id="ovSpecNoteWrap" class="profile-spec-item full" style="display:none;">
-                <div class="profile-spec-lbl">Ghi chú chăm sóc</div>
-                <div id="ovSpecNote" class="profile-spec-val" style="font-weight:600;color:#475569;"></div>
-              </div>
+            <div style="margin-top:14px;">
+              <button type="button" id="btnNotifToggle" class="btn btn-primary" onclick="toggleNotifications()">🔔 Bật thông báo giờ cho ăn</button>
             </div>
-          </div>
-
-          <div class="profile-action-grid">
-            <button type="button" class="profile-action-btn" onclick="switchTab('weight')" title="Xem thống kê & biểu đồ">
-              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <span>Thống kê</span>
-            </button>
-            <button type="button" class="profile-action-btn" onclick="openPetModal(true)" title="Sửa hồ sơ bé">
-              <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-              <span>Sửa hồ sơ</span>
-            </button>
-            <button type="button" class="profile-action-btn danger" onclick="deleteCurrentPet()" title="Xóa hồ sơ">
-              <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-              <span>Xóa bé</span>
-            </button>
-            <button type="button" class="profile-action-btn" onclick="switchTab('log')" title="Ghi nhật ký mới">
-              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              <span>Ghi nhật ký</span>
-            </button>
+            <div class="btn-row-2">
+              <button type="button" class="btn btn-secondary" onclick="sendTestNotification()">Thử thông báo</button>
+              <button type="button" class="btn btn-secondary" onclick="downloadICS()">📅 Thêm vào Lịch (.ics)</button>
+            </div>
+            <div id="iosHint" class="hint-box"></div>
           </div>
         </div>
 
-        <!-- Thẻ Cảm biến vùng nóng ESP32-C3 thời gian thực -->
-        <div class="card live-sensor-card" id="liveSensorCard">
-          <div class="card-title" style="margin-bottom:8px;">
-            <span>📡 Cảm biến vùng nóng (ESP32 Live)</span>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="pullSensorsFromCloud(true)">🔄 Đọc ngay</button>
-          </div>
-          <div id="liveSensorContent">
-            <div style="font-size:13px;color:var(--muted);">Chưa có dữ liệu từ cảm biến ESP32-C3.</div>
-          </div>
-        </div>
-
-        <!-- Thẻ Thời tiết tự động & Lời khuyên chăm sóc -->
-        <div class="card" id="weatherCard">
-          <div class="card-title" style="margin-bottom:8px;">
-            <span>🌡️ Thời tiết & Nhiệt độ khu vực</span>
-            <button type="button" class="btn btn-secondary btn-sm" id="btnRefreshWeather" onclick="fetchLocalWeather(true)">🔄 Làm mới</button>
-          </div>
-          <div id="weatherContent">
-            <div style="font-size:13px;color:var(--muted);">Đang tự động cập nhật thời tiết tại vị trí của bạn...</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="sched-label">LỊCH CHO ĂN TIẾP THEO</div>
-          <div id="schedDateTime" class="sched-time">--/--/---- • <span>19:00</span></div>
-          <div id="schedSub" style="font-size:13px; color:var(--muted);">Chưa có bữa ăn nào được ghi nhận</div>
-          <div><span id="schedBadge" class="status-pill st-none">Chưa có bữa ăn</span></div>
-
-          <div style="margin-top:14px;">
-            <button type="button" id="btnNotifToggle" class="btn btn-primary" onclick="toggleNotifications()">🔔 Bật thông báo giờ cho ăn</button>
-          </div>
-          <div class="btn-row-2">
-            <button type="button" class="btn btn-secondary" onclick="sendTestNotification()">Thử thông báo</button>
-            <button type="button" class="btn btn-secondary" onclick="downloadICS()">📅 Thêm vào Lịch (.ics)</button>
-          </div>
-          <div id="iosHint" class="hint-box"></div>
-        </div>
-
-        </div>
         <div class="ov-col-right">
-        <div class="kpi-grid">
-          <div class="kpi">
-            <div class="kpi-lbl">Cân nặng hiện tại</div>
-            <div id="kpiWeight" class="kpi-val" style="color:var(--primary);">-- g</div>
-            <div id="kpiWeightSub" class="kpi-sub">Chưa nhập số cân</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-lbl">Tổng mồi 7 ngày qua</div>
-            <div id="kpiFood" class="kpi-val" style="color:var(--green);">0 con</div>
-            <div id="kpiFoodSub" class="kpi-sub">Trong 0 bữa ăn</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-lbl">Vùng nóng (Cảm biến / Nhật ký)</div>
-            <div id="kpiTemp" class="kpi-val" style="font-size:16px;">-- / --°C</div>
-            <div id="kpiTempSub" class="kpi-sub">Chưa có dữ liệu</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-lbl">Đi phân & Thể trạng</div>
-            <div id="kpiPoop" class="kpi-val" style="font-size:15px;">Chưa có</div>
-            <div id="kpiStatusSub" class="kpi-sub">Bình thường</div>
-          </div>
-        </div>
-
-        <div class="card ai-card" id="aiAnalysisCard">
-          <div class="card-title" style="margin-bottom:8px;">
-            <span>✨ Trợ lý AI Phân tích sức khỏe</span>
-            <div class="ai-header-actions">
-              <button type="button" class="btn btn-secondary btn-sm" onclick="openAiModal()" title="Cài đặt Gemini API Key">🔑 API Key</button>
-              <button type="button" class="btn btn-ai btn-sm" id="btnRunAi" onclick="runGeminiAnalysis()">✨ Phân tích ngay</button>
+          <div class="kpi-grid">
+            <div class="kpi">
+              <div class="kpi-lbl">Cân nặng hiện tại</div>
+              <div id="kpiWeight" class="kpi-val" style="color:var(--primary);">-- g</div>
+              <div id="kpiWeightSub" class="kpi-sub">Chưa nhập số cân</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-lbl">Tổng mồi 7 ngày qua</div>
+              <div id="kpiFood" class="kpi-val" style="color:var(--green);">0 con</div>
+              <div id="kpiFoodSub" class="kpi-sub">Trong 0 bữa ăn</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-lbl">Vùng nóng (Live / Sổ)</div>
+              <div id="kpiTemp" class="kpi-val" style="font-size:16px;">-- / --°C</div>
+              <div id="kpiTempSub" class="kpi-sub">Chưa có dữ liệu</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-lbl">Đi phân & Thể trạng</div>
+              <div id="kpiPoop" class="kpi-val" style="font-size:15px;">Chưa có</div>
+              <div id="kpiStatusSub" class="kpi-sub">Bình thường</div>
             </div>
           </div>
-          <div id="aiStatusLine" style="font-size:12.5px;color:var(--muted);line-height:1.45;">
-            AI sẽ tổng hợp cân nặng, khẩu phần mồi, lịch bổ sung Canxi/D3, tình trạng phân và nhiệt độ cảm biến chuồng để đánh giá sức khỏe của bé.
-          </div>
-          <div id="aiResultContainer" style="display:none;"></div>
-        </div>
 
-        <div class="card">
-          <div class="card-title">
-            <span>📋 Nhật ký gần đây</span>
-            <button type="button" class="btn btn-primary btn-sm" onclick="switchTab('log')">+ Ghi mới</button>
+          <div class="card ai-card" id="aiAnalysisCard">
+            <div class="card-title" style="margin-bottom:8px;">
+              <span class="title-with-ico"><span class="title-ico" style="background:#EDE9FE;border-color:#DDD6FE;">✨</span>Trợ lý AI Phân tích sức khỏe</span>
+              <div class="ai-header-actions">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openAiModal()" title="Cài đặt Gemini API Key">🔑 Key</button>
+                <button type="button" class="btn btn-ai btn-sm" id="btnRunAi" onclick="runGeminiAnalysis()">✨ Phân tích</button>
+              </div>
+            </div>
+            <div id="aiStatusLine" style="font-size:12.5px;color:var(--muted);line-height:1.5;">
+              AI tổng hợp cân nặng, khẩu phần mồi, lịch bổ sung Canxi/D3, tình trạng phân và nhiệt độ cảm biến chuồng để đánh giá sức khỏe của bé.
+            </div>
+            <div id="aiResultContainer" style="display:none;"></div>
           </div>
-          <div id="recentLogs"></div>
-        </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span class="title-with-ico"><span class="title-ico">📋</span>Nhật ký gần đây</span>
+              <button type="button" class="btn btn-primary btn-sm" onclick="switchTab('log')">+ Ghi mới</button>
+            </div>
+            <div id="recentLogs"></div>
+          </div>
         </div>
       </section>
 
@@ -1486,7 +1906,10 @@
           <div class="temp-input-box">
             <div class="temp-box-head">
               <b>🌡️ Nhiệt độ đo trong chuồng</b>
-              <span id="logSensorAutoNote">Chuẩn: Nóng 30–32°C | Mát 24–26°C</span>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span id="logSensorAutoNote">Chuẩn: Nóng 30–32°C | Mát 24–26°C</span>
+                <button type="button" class="btn-fill-sensor" onclick="fillWarmTempFromSensor()">📡 Lấy từ cảm biến</button>
+              </div>
             </div>
             <div class="form-row-2">
               <div class="form-group" style="margin-bottom:8px;">
@@ -1501,7 +1924,14 @@
           </div>
 
           <div class="form-group">
-            <label>Khẩu phần mồi đã ăn (có thể thêm nhiều loại)</label>
+            <label>Khẩu phần mồi đã ăn (chọn nhanh hoặc tự điều chỉnh)</label>
+            <div class="preset-row">
+              <button type="button" class="preset-btn" onclick="applyFeederPreset('Gián Dubia', 2)">+ 2 Gián Dubia</button>
+              <button type="button" class="preset-btn" onclick="applyFeederPreset('Gián Dubia', 3)">+ 3 Gián Dubia</button>
+              <button type="button" class="preset-btn" onclick="applyFeederPreset('Dế', 3)">+ 3 Dế</button>
+              <button type="button" class="preset-btn" onclick="applyFeederPreset('Sâu quy (Mealworm)', 5)">+ 5 Sâu quy</button>
+              <button type="button" class="preset-btn" onclick="applyFeederPreset('Không cho ăn', 0)">Nhịn ăn (0 con)</button>
+            </div>
             <div id="feederList"></div>
             <button type="button" class="btn btn-secondary btn-sm" onclick="addFeederRow()">+ Thêm loại mồi khác</button>
           </div>
@@ -1574,7 +2004,7 @@
               <span class="legend-item"><span class="legend-dot" style="background:#16A34A;"></span>Sâu quy</span>
               <span class="legend-item"><span class="legend-dot" style="background:#8B5CF6;"></span>Superworm</span>
             </div>
-            <span id="feedingAvgBadge" style="font-size:12px; font-weight:700; color:var(--green);"></span>
+            <span id="feedingAvgBadge" class="tnum" style="font-size:12px; font-weight:800; color:var(--green);"></span>
           </div>
           <div id="feedingChartContainer" class="chart-wrap"></div>
           <div id="feedingChartTip" class="chart-tip">Chạm vào biểu đồ để xem chi tiết mồi đã ăn</div>
@@ -1595,7 +2025,7 @@
       <section id="tab-backup" class="tab-pane">
         <div class="card">
           <div class="card-title">☁️ Đồng bộ tự động iPhone ↔ PC ↔ ESP32</div>
-          <p style="font-size:13px; color:var(--muted); line-height:1.5; margin-top:0;">
+          <p style="font-size:13px; color:var(--muted); line-height:1.55; margin-top:0;">
             Nhập cùng một <b>Đường dẫn Firebase</b> và <b>Mã đồng bộ bí mật</b> trên cả điện thoại, máy tính và code ESP32-C3 để dữ liệu tự động cập nhật thời gian thực.
           </p>
           <div id="syncStatusDetail" class="hint-box" style="margin-bottom:12px;">Chưa cấu hình đồng bộ đám mây.</div>
@@ -1608,7 +2038,7 @@
 
         <div class="card">
           <div class="card-title">✨ Cấu hình Google Gemini AI</div>
-          <p style="font-size:13px; color:var(--muted); line-height:1.5; margin-top:0;">
+          <p style="font-size:13px; color:var(--muted); line-height:1.55; margin-top:0;">
             Nhập mã <b>Gemini API Key</b> (tạo miễn phí tại Google AI Studio) để AI phân tích dữ liệu ăn uống, tăng trưởng và nhiệt độ chuồng của từng bé. Mã chỉ lưu cục bộ trong <code>localStorage</code> trên trình duyệt của bạn.
           </p>
           <div id="aiKeyStatusDetail" class="hint-box" style="margin-bottom:12px;">Chưa lưu Gemini API Key trên thiết bị này.</div>
@@ -1629,22 +2059,38 @@
 
   <nav id="bottomNav" class="bottom-nav" style="display:none;">
     <button type="button" class="nav-btn active" data-tab="geckos" onclick="switchTab('geckos')">
-      <span class="nav-ico">🦎</span><span>Danh sách</span>
+      <span class="nav-ico">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
+      </span>
+      <span>Danh sách</span>
     </button>
     <button type="button" class="nav-btn" data-tab="overview" onclick="switchTab('overview')">
-      <span class="nav-ico">📊</span><span>Tổng quan</span>
+      <span class="nav-ico">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      </span>
+      <span>Tổng quan</span>
     </button>
-    <button type="button" class="nav-btn" data-tab="log" onclick="switchTab('log')">
-      <span class="nav-ico">📝</span><span>Ghi nhật ký</span>
+    <button type="button" class="nav-btn nav-center" data-tab="log" onclick="switchTab('log')">
+      <span class="nav-ico">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </span>
+      <span>Ghi nhật ký</span>
     </button>
     <button type="button" class="nav-btn" data-tab="weight" onclick="switchTab('weight')">
-      <span class="nav-ico">📈</span><span>Thống kê</span>
+      <span class="nav-ico">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      </span>
+      <span>Thống kê</span>
     </button>
     <button type="button" class="nav-btn" data-tab="backup" onclick="switchTab('backup')">
-      <span class="nav-ico">☁️</span><span>Đồng bộ</span>
+      <span class="nav-ico">
+        <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+      </span>
+      <span>Đồng bộ</span>
     </button>
   </nav>
 
+  <!-- Modal Thêm / Sửa Hồ sơ Gecko -->
   <div id="petModal" class="modal-backdrop" onclick="if(event.target===this) closePetModal()">
     <div class="modal-sheet">
       <div class="card-title">
@@ -1703,6 +2149,7 @@
     </div>
   </div>
 
+  <!-- Modal Firebase Sync -->
   <div id="syncModal" class="modal-backdrop" onclick="if(event.target===this) closeSyncModal()">
     <div class="modal-sheet">
       <div class="card-title">
@@ -1729,6 +2176,7 @@
     </div>
   </div>
 
+  <!-- Modal Gemini API Key -->
   <div id="aiModal" class="modal-backdrop" onclick="if(event.target===this) closeAiModal()">
     <div class="modal-sheet">
       <div class="card-title">
@@ -1972,6 +2420,27 @@
       }
     }
 
+    function buildThermalGaugeHTML(temp) {
+      // Scale from 24°C (0%) to 38°C (100%)
+      const minScale = 24.0;
+      const maxScale = 38.0;
+      const clamped = Math.max(minScale, Math.min(maxScale, temp));
+      const pct = ((clamped - minScale) / (maxScale - minScale)) * 100;
+      return (
+        '<div class="thermal-gauge-wrap">' +
+          '<div class="thermal-track">' +
+            '<div class="thermal-ideal-box"></div>' +
+            '<div class="thermal-pin" style="left:' + pct.toFixed(1) + '%;"></div>' +
+          '</div>' +
+          '<div class="thermal-scale">' +
+            '<span>24°C</span>' +
+            '<span class="ideal-lbl">Chuẩn: 29.0 – 33.5°C</span>' +
+            '<span>38°C</span>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
     function renderLiveSensorCard() {
       const card = document.getElementById('liveSensorCard');
       const box = document.getElementById('liveSensorContent');
@@ -1984,7 +2453,7 @@
         const hint = getSensorEndpoint()
           ? 'Đang chờ ESP32-C3 gửi dữ liệu lên nhánh <code>/sensors/' + escapeHTML(syncCfg.code) + '</code>...'
           : 'Hãy kết nối <b>Firebase</b> ở góc trên và nạp code ESP32-C3 với cùng <b>Mã đồng bộ</b> để xem nhiệt độ trực tiếp.';
-        box.innerHTML = '<div style="font-size:13px;color:var(--muted);line-height:1.5;"><span class="live-dot off"></span>' + hint + '</div>';
+        box.innerHTML = '<div style="font-size:13px;color:var(--muted);line-height:1.55;"><span class="live-dot off"></span>' + hint + '</div>';
         return;
       }
 
@@ -1998,13 +2467,13 @@
                 '<span class="live-temp-big" style="color:var(--red);">' + st.temp.toFixed(1) + '°C</span>' +
                 '<span class="weather-cond" style="color:var(--red);">Lỗi đầu dò DS18B20</span>' +
               '</div>' +
-              '<div class="weather-loc" style="color:#991B1B;font-weight:600;"><span class="live-dot err"></span>Chuồng ' + escapeHTML(pet.name) + ' • Mất tín hiệu đầu dò</div>' +
+              '<div class="weather-loc" style="color:#991B1B;font-weight:700;"><span class="live-dot err"></span>Chuồng ' + escapeHTML(pet.name) + ' • Mất tín hiệu đầu dò</div>' +
             '</div>' +
-            '<span class="weather-badge wb-hot">⚠️ LỖI DÂY CẢM BIẾN</span>' +
+            '<span class="weather-badge wb-hot">⚠️ LỖI DÂY</span>' +
           '</div>' +
           '<div class="weather-advice err"><b>Cảnh báo tuột hoặc lỏng dây cảm biến!</b> Đầu dò chuồng ' + escapeHTML(pet.name) + ' đang trả về <b>' + st.temp.toFixed(1) + '°C</b>. Hãy kiểm tra lại mối nối dây tín hiệu (GPIO 4), nguồn 3.3V hoặc dây GND của đầu dò này.</div>' +
           '<div class="auto-sync-note">' +
-            '<span>📡 Nguồn: ESP32-C3 DS18B20</span>' +
+            '<span>📡 ESP32-C3 DS18B20</span>' +
             '<span>🕒 ' + escapeHTML(timeNote) + '</span>' +
           '</div>';
         return;
@@ -2023,17 +2492,18 @@
           '<div>' +
             '<div class="weather-temp-row">' +
               '<span class="live-temp-big">' + st.temp.toFixed(1) + '°C</span>' +
-              '<span class="weather-cond">Đầu dò vùng nóng</span>' +
+              '<span class="weather-cond">Vùng nóng</span>' +
             '</div>' +
-            '<div class="weather-loc"><span class="live-dot' + (isStale ? ' stale' : '') + '"></span>Chuồng ' + escapeHTML(pet.name) + (isStale ? ' • Mất tín hiệu mới' : ' • Tự động cập nhật mỗi 20s') + '</div>' +
+            '<div class="weather-loc"><span class="live-dot' + (isStale ? ' stale' : '') + '"></span>Chuồng ' + escapeHTML(pet.name) + (isStale ? ' • Mất tín hiệu mới' : ' • Cập nhật mỗi 20s') + '</div>' +
           '</div>' +
           '<span class="weather-badge ' + (isStale ? 'wb-warm' : info.badgeClass) + '">' + (isStale ? '📴 Mất tín hiệu mới' : info.badgeText) + '</span>' +
         '</div>' +
+        buildThermalGaugeHTML(st.temp) +
         staleWarning +
         '<div class="weather-advice ' + info.cls + '">' + info.advice + '</div>' +
         '<div class="auto-sync-note">' +
-          '<span>📡 Nguồn: ESP32-C3 DS18B20</span>' +
-          '<span>🕒 Cập nhật dữ liệu lúc ' + escapeHTML(lastChangeNote) + '</span>' +
+          '<span>📡 ESP32-C3 DS18B20</span>' +
+          '<span>🕒 Cập nhật lúc ' + escapeHTML(lastChangeNote) + '</span>' +
         '</div>';
     }
 
@@ -2187,7 +2657,7 @@
           '</div>' +
           '<div class="weather-advice ' + info.levelClass + '">' + info.advice + '</div>' +
           '<div class="auto-sync-note">' +
-            '<span>🔄 Tự động cập nhật mỗi 15 phút</span>' +
+            '<span>🔄 Tự động mỗi 15 phút</span>' +
             '<span>🕒 ' + escapeHTML(timeText) + '</span>' +
           '</div>' +
           warnLine;
@@ -2195,7 +2665,7 @@
       }
 
       box.innerHTML =
-        '<div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:10px;">' +
+        '<div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:10px;">' +
           (errorMsg ? escapeHTML(errorMsg) : 'Bấm nút bên dưới để cấp quyền vị trí, ứng dụng sẽ tự động cập nhật thời tiết và gợi ý điều chỉnh nhiệt độ chuồng nuôi.') +
         '</div>' +
         '<button type="button" class="btn btn-primary btn-sm" onclick="fetchLocalWeather(true)">📍 Cho phép vị trí & Tự động cập nhật</button>';
@@ -2238,7 +2708,7 @@
 
     async function tryOpenMeteo(lat, lon) {
       const wRes = await fetchWithTimeout(
-        'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&timezone=auto',
+        'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '¤t=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&timezone=auto',
         {},
         6000
       );
@@ -2623,6 +3093,22 @@
       return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     }
 
+    function selectPetQuickly(petId) {
+      if (state.activeId === petId) return;
+      state.activeId = petId;
+      editingLogId = null;
+      saveState(true);
+      renderAll();
+      const activePane = document.querySelector('.tab-pane.active');
+      if (activePane) {
+        if (activePane.id === 'tab-log') initLogForm();
+        else if (activePane.id === 'tab-weight') {
+          renderFeedingChart();
+          renderWeightChart();
+        }
+      }
+    }
+
     function switchTab(tabName, preserveEdit) {
       document.querySelectorAll('.tab-pane').forEach(function (el) { el.classList.remove('active'); });
       document.querySelectorAll('.nav-btn, .side-nav-btn').forEach(function (el) { el.classList.remove('active'); });
@@ -2638,6 +3124,7 @@
         renderFeedingChart();
         renderWeightChart();
       }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function openPetModal(isEdit) {
@@ -2772,10 +3259,10 @@
         badgeText = '⚠️ Quá lịch ' + Math.abs(diffDays) + ' ngày';
         badgeClass = 'st-late';
       } else if (diffDays === 0) {
-        badgeText = '🔔 Đến lịch hôm nay lúc ' + feedTime;
+        badgeText = '🔔 Hôm nay • ' + feedTime;
         badgeClass = 'st-due';
       } else {
-        badgeText = '⏳ Còn ' + diffDays + ' ngày nữa';
+        badgeText = '⏳ Còn ' + diffDays + ' ngày';
         badgeClass = 'st-ok';
       }
 
@@ -2845,10 +3332,10 @@
 
       if (granted) {
         btn.textContent = '✅ Đang bật thông báo giờ ăn (Nhấn để tắt)';
-        btn.style.background = '#16A34A';
+        btn.style.background = '#059669';
       } else {
         btn.textContent = '🔔 Bật thông báo giờ cho ăn';
-        btn.style.background = '#EA580C';
+        btn.style.background = '';
       }
 
       if (isStandaloneMode()) {
@@ -2924,6 +3411,43 @@
       showToast('Đã tạo lịch nhắc lặp định kỳ!', 'ok');
     }
 
+    function fillWarmTempFromSensor() {
+      const pet = getActivePet();
+      const liveW = getPetLiveSensorTemp(pet);
+      if (liveW !== null) {
+        document.getElementById('logWarmTemp').value = liveW;
+        showToast('Đã điền ' + liveW + '°C từ cảm biến ESP32!', 'ok');
+      } else {
+        showToast('Cảm biến của bé chưa có dữ liệu hợp lệ.', 'err');
+      }
+    }
+
+    function applyFeederPreset(type, count) {
+      const list = document.getElementById('feederList');
+      if (!list) return;
+      if (type === 'Không cho ăn' || count === 0) {
+        list.innerHTML = '';
+        addFeederRow('Không cho ăn', 0);
+        return;
+      }
+      // Remove any "Không cho ăn" placeholder row if present
+      Array.from(list.children).forEach(function (row) {
+        const sel = row.querySelector('.f-type');
+        if (sel && sel.value === 'Không cho ăn') row.remove();
+      });
+      // If same type already exists, increment count; otherwise add row
+      const existing = Array.from(list.children).find(function (row) {
+        const sel = row.querySelector('.f-type');
+        return sel && sel.value === type;
+      });
+      if (existing) {
+        const inp = existing.querySelector('.f-count');
+        inp.value = Math.min(50, (parseInt(inp.value, 10) || 0) + count);
+      } else {
+        addFeederRow(type, count);
+      }
+    }
+
     function initLogForm() {
       editingLogId = null;
       const pet = getActivePet();
@@ -2939,7 +3463,7 @@
       const autoNote = document.getElementById('logSensorAutoNote');
       if (autoNote) {
         autoNote.textContent = liveW !== null
-          ? ('📡 Đã tự điền từ cảm biến: ' + liveW + '°C')
+          ? ('📡 Tự điền: ' + liveW + '°C')
           : 'Chuẩn: Nóng 30–32°C | Mát 24–26°C';
       }
       document.getElementById('logWeight').value = '';
@@ -3152,7 +3676,7 @@
         const tParts = [];
         if (hasWarm) tParts.push('🔥 Nóng: ' + log.warmTemp + '°C');
         if (hasCool) tParts.push('❄️ Mát: ' + log.coolTemp + '°C');
-        tempLine = '<div><span class="temp-pill-inline' + (isWarn ? ' warn' : '') + '">' + tParts.join('  |  ') + '</span></div>';
+        tempLine = '<div><span class="temp-pill-inline' + (isWarn ? ' warn' : '') + '">' + tParts.join('  |  ') + '</span></div>';
       }
 
       const noteLine = log.notes ? '<div class="log-sub" style="color:#0F172A;margin-top:2px;">📝 ' + escapeHTML(log.notes) + '</div>' : '';
@@ -3163,7 +3687,7 @@
             '<div class="log-date">' + formatVNDate(log.date) + ' • ' + (log.time || '') + '</div>' +
             '<div class="log-main">' + escapeHTML(foodText) + weightBadge + '</div>' +
             tempLine +
-            '<div class="log-sub">💊 ' + escapeHTML(suppText) + '  |  💩 ' + escapeHTML(log.poop) + '</div>' +
+            '<div class="log-sub">💊 ' + escapeHTML(suppText) + '  |  💩 ' + escapeHTML(log.poop) + '</div>' +
             '<div class="log-sub">🦎 ' + escapeHTML(log.status) + '</div>' +
             noteLine +
           '</div>' +
@@ -3286,7 +3810,7 @@
         box.innerHTML =
           '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;">' +
             gridSVG +
-            (areaPoints ? '<polygon fill="#16A34A" fill-opacity="0.10" points="' + areaPoints + '"/>' : '') +
+            (areaPoints ? '<polygon fill="#16A34A" fill-opacity="0.12" points="' + areaPoints + '"/>' : '') +
             (coords.length > 1 ? '<polyline fill="none" stroke="#16A34A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="' + polyline + '"/>' : '') +
             dotsSVG +
           '</svg>';
@@ -3322,7 +3846,7 @@
             if (seg.val <= 0) return;
             const segH = (seg.val / yMax) * plotH;
             curY -= segH;
-            barsSVG += '<rect x="' + bx + '" y="' + curY + '" width="' + barW + '" height="' + segH + '" rx="2" fill="' + seg.color + '"/>';
+            barsSVG += '<rect x="' + bx + '" y="' + curY + '" width="' + barW + '" height="' + segH + '" rx="2.5" fill="' + seg.color + '"/>';
           });
           barsSVG += '<text x="' + cx + '" y="' + (curY - 6) + '" text-anchor="middle" font-size="11" font-weight="800" fill="#0F172A">' + d.total + '</text>';
         }
@@ -3405,6 +3929,10 @@
       });
 
       const polyline = coords.map(function (c) { return c.x + ',' + c.y; }).join(' ');
+      const areaPoints = coords.length > 1
+        ? (coords[0].x + ',' + (padT + plotH) + ' ' + polyline + ' ' + coords[coords.length - 1].x + ',' + (padT + plotH))
+        : '';
+
       let dotsSVG = '';
       coords.forEach(function (c, idx) {
         const shortDate = c.p.date.slice(5).split('-').reverse().join('/');
@@ -3421,6 +3949,7 @@
       box.innerHTML =
         '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;">' +
           gridSVG +
+          (areaPoints ? '<polygon fill="#EA580C" fill-opacity="0.10" points="' + areaPoints + '"/>' : '') +
           (coords.length > 1 ? '<polyline fill="none" stroke="#EA580C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="' + polyline + '"/>' : '') +
           dotsSVG +
         '</svg>';
@@ -3524,6 +4053,41 @@
       showToast('Đã xuất file Excel (.csv)!', 'ok');
     }
 
+    function renderQuickPetBar() {
+      const wrap = document.getElementById('quickPetBarWrap');
+      const scroll = document.getElementById('quickPetScroll');
+      if (!wrap || !scroll) return;
+      if (!state.geckos.length) {
+        wrap.style.display = 'none';
+        scroll.innerHTML = '';
+        return;
+      }
+      wrap.style.display = 'block';
+      scroll.innerHTML = state.geckos.map(function (g) {
+        const isActive = g.id === state.activeId;
+        const initial = escapeHTML((g.name || 'G').trim().charAt(0).toUpperCase());
+        const st = getPetSensorState(g);
+        let tempBadge = '<span class="qp-temp">--°</span>';
+        if (st.status === 'error') {
+          tempBadge = '<span class="qp-temp err">⚠️ Lỗi</span>';
+        } else if (st.status === 'stale') {
+          tempBadge = '<span class="qp-temp stale">' + st.temp.toFixed(1) + '°</span>';
+        } else if (st.status === 'ok') {
+          const cls = classifyHotTemp(st.temp).cls;
+          tempBadge = '<span class="qp-temp ' + cls + '">' + st.temp.toFixed(1) + '°C</span>';
+        }
+        return (
+          '<button type="button" class="qp-chip' + (isActive ? ' active' : '') + '" onclick="selectPetQuickly(\'' + g.id + '\')">' +
+            '<span style="display:inline-flex;align-items:center;gap:7px;">' +
+              '<span class="qp-avatar">' + initial + '</span>' +
+              '<span>' + escapeHTML(g.name) + '</span>' +
+            '</span>' +
+            tempBadge +
+          '</button>'
+        );
+      }).join('');
+    }
+
     function renderAll() {
       const grid = document.getElementById('geckoCardsGrid');
       const emptyBox = document.getElementById('emptyState');
@@ -3539,6 +4103,7 @@
 
       if (grid) grid.innerHTML = '';
       if (!state.geckos.length) {
+        renderQuickPetBar();
         emptyBox.style.display = 'block';
         appContent.style.display = 'none';
         bottomNav.style.display = 'none';
@@ -3551,6 +4116,7 @@
         saveState(true);
       }
 
+      renderQuickPetBar();
       emptyBox.style.display = 'none';
       appContent.style.display = 'block';
       bottomNav.style.display = 'grid';
@@ -3593,9 +4159,9 @@
           '<div class="ppc-body">' +
             '<div class="ppc-head">' +
               '<div class="ppc-name">' + escapeHTML(g.name) + '</div>' +
-              '<span class="ppc-open-pill">🪪 Mở thẻ</span>' +
+              '<span class="ppc-open-pill">Mở hồ sơ →</span>' +
             '</div>' +
-            '<div class="ppc-species">Leopard gecko</div>' +
+            '<div class="ppc-species">Leopard Gecko</div>' +
             liveStripHTML +
             '<div class="ppc-grid">' +
               '<div class="ppc-item">' +
@@ -3622,7 +4188,7 @@
           '</div>' +
           '<div class="ppc-actions">' +
             '<button type="button" class="ppc-act-btn" data-act="stats" title="Xem thống kê">' +
-              '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>' +
+              '<svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>' +
             '</button>' +
             '<button type="button" class="ppc-act-btn" data-act="edit" title="Sửa hồ sơ">' +
               '<svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>' +
@@ -3656,8 +4222,10 @@
       const pet = getActivePet();
       const hintEl = document.getElementById('ovActiveHint');
       if (hintEl) hintEl.textContent = 'Đang xem: ' + pet.name;
+      const monoEl = document.getElementById('ovMonogram');
+      if (monoEl) monoEl.textContent = (pet.name || 'G').trim().charAt(0).toUpperCase();
       document.getElementById('ovName').textContent = pet.name;
-      document.getElementById('ovCycleBadge').textContent = '🪪 ' + (pet.cycleDays || 2) + ' ngày/lần • ' + (pet.feedTime || '19:00');
+      document.getElementById('ovCycleBadge').textContent = (pet.cycleDays || 2) + ' ngày/lần • ' + (pet.feedTime || '19:00');
 
       const ageEl = document.getElementById('ovSpecAge');
       if (pet.age) {
@@ -3774,7 +4342,6 @@
       renderFeedingChart();
       renderWeightChart();
     }
-
 
     /* ============================================================
        GOOGLE GEMINI AI HEALTH ANALYSIS (WITH AUTO MODEL FALLBACK)
@@ -4112,7 +4679,7 @@
           resBox.innerHTML =
             '<div class="ai-result-box" style="border-color:#FECACA;background:#FEF2F2;color:#991B1B;">' +
               '<b>⚠️ Lỗi gọi Google Gemini API:</b> ' + escapeHTML(err.message || 'Không thể kết nối') +
-              '<div style="margin-top:6px;font-size:12px;">Đã thử tự động chuyển các mô hình dự phòng nhưng máy chủ Google đang bận hoặc API Key chưa hợp lệ. Bạn hãy thử bấm lại sau vài chục giây hoặc kiểm tra nút <b>🔑 API Key</b>.</div>' +
+              '<div style="margin-top:6px;font-size:12px;">Đã thử tự động chuyển các mô hình dự phòng nhưng máy chủ Google đang bận hoặc API Key chưa hợp lệ. Bạn hãy thử bấm lại sau vài chục giây hoặc kiểm tra nút <b>🔑 Key</b>.</div>' +
             '</div>';
         }
         showToast('Lỗi phân tích AI: ' + (err.message || 'Thất bại'), 'err');
@@ -4120,7 +4687,7 @@
         isAnalyzingAi = false;
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '✨ Phân tích ngay';
+          btn.textContent = '✨ Phân tích';
         }
       }
     }
